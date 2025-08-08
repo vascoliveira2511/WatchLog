@@ -1,11 +1,9 @@
 {
-  "name": "watchlog",
   "version": 2,
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["all"],
   "functions": {
     "app/**/*.ts": {
       "runtime": "nodejs18.x"
