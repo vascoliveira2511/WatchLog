@@ -1,12 +1,12 @@
 "use client";
 
+import { motion } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
-import { Star, Calendar, Clock, Plus, Check, Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Star, Plus, Check, Play, Clock, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { ProgressRing } from "@/components/ui/progress-ring";
+import { GlowingButton } from "@/components/ui/glowing-button";
 import { cn } from "@/lib/utils";
 
 interface MediaCardProps {
@@ -26,6 +26,7 @@ interface MediaCardProps {
   onWatchedToggle?: (id: number, watched: boolean) => void;
   onWatchlistToggle?: (id: number, inWatchlist: boolean) => void;
   onRate?: (id: number, rating: number) => void;
+  onClick?: (id: number) => void;
   className?: string;
 }
 
@@ -38,7 +39,7 @@ export function MediaCard({
   rating,
   genres = [],
   overview,
-  progress,
+  progress = 0,
   totalEpisodes,
   watchedEpisodes,
   isWatched = false,
@@ -46,14 +47,16 @@ export function MediaCard({
   onWatchedToggle,
   onWatchlistToggle,
   onRate,
+  onClick,
   className,
 }: MediaCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [currentRating, setCurrentRating] = useState(rating || 0);
+  const [currentRating, setCurrentRating] = useState((rating || 0) / 2); // Convert to 5-star scale
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const posterUrl = posterPath 
-    ? `https://image.tmdb.org/t/p/w342${posterPath}`
-    : "/placeholder-poster.jpg";
+    ? `https://image.tmdb.org/t/p/w500${posterPath}`
+    : null;
 
   const handleWatchedClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -68,161 +71,312 @@ export function MediaCard({
   const handleRatingClick = (e: React.MouseEvent, newRating: number) => {
     e.stopPropagation();
     setCurrentRating(newRating);
-    onRate?.(id, newRating);
+    onRate?.(id, newRating * 2); // Convert back to 10-point scale
+  };
+
+  const handleCardClick = () => {
+    onClick?.(id);
   };
 
   return (
-    <Card 
+    <motion.div
       className={cn(
-        "group relative overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer",
+        "group relative cursor-pointer select-none",
+        "aspect-poster bg-background-card overflow-hidden",
+        "transform-gpu perspective-1000 stagger-item",
         className
       )}
+      whileHover={{ 
+        scale: 1.05,
+        rotateY: -3,
+        rotateX: 2,
+        z: 50,
+      }}
+      whileTap={{ scale: 0.98 }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 20,
+      }}
+      style={{
+        transformStyle: "preserve-3d",
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick}
     >
-      <CardContent className="p-0">
-        <div className="relative aspect-[2/3] bg-gray-100">
-          <Image
-            src={posterUrl}
-            alt={title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-          />
-          
-          {/* Overlay with controls - visible on hover */}
-          <div className={cn(
-            "absolute inset-0 bg-black/60 flex flex-col justify-end p-4 transition-opacity duration-200",
-            isHovered ? "opacity-100" : "opacity-0"
-          )}>
-            {/* Quick action buttons */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex space-x-2">
-                <Button
-                  size="icon"
-                  variant={isWatched ? "default" : "secondary"}
-                  className="h-8 w-8"
-                  onClick={handleWatchedClick}
-                >
-                  {isWatched ? (
-                    <Check className="h-4 w-4" />
-                  ) : type === "movie" ? (
-                    <Eye className="h-4 w-4" />
-                  ) : (
-                    <Clock className="h-4 w-4" />
-                  )}
-                </Button>
-                
-                <Button
-                  size="icon"
-                  variant={isInWatchlist ? "default" : "secondary"}
-                  className="h-8 w-8"
-                  onClick={handleWatchlistClick}
-                >
-                  <Plus className={cn(
-                    "h-4 w-4 transition-transform",
-                    isInWatchlist && "rotate-45"
-                  )} />
-                </Button>
-              </div>
-              
-              {/* Rating stars */}
-              <div className="flex space-x-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={(e) => handleRatingClick(e, star)}
-                    className="p-1"
-                  >
-                    <Star
-                      className={cn(
-                        "h-3 w-3 transition-colors",
-                        star <= currentRating
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-300 hover:text-yellow-400"
-                      )}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
+      {/* Main Poster Container */}
+      <div className="relative w-full h-full">
+        {posterUrl ? (
+          <>
+            {/* Loading Shimmer */}
+            {!imageLoaded && (
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 animate-shimmer bg-[length:200%_100%]" />
+            )}
             
-            {/* Progress bar for TV shows */}
-            {type === "tv" && progress !== undefined && (
-              <div className="mb-3">
-                <Progress value={progress} className="h-2" />
-                <div className="text-xs text-white/80 mt-1">
-                  {watchedEpisodes || 0} / {totalEpisodes || 0} episodes
-                </div>
+            <Image
+              src={posterUrl}
+              alt={title}
+              fill
+              className={cn(
+                "object-cover transition-all duration-500 transform-gpu",
+                imageLoaded ? "opacity-100" : "opacity-0"
+              )}
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+              onLoadingComplete={() => setImageLoaded(true)}
+              priority={false}
+            />
+          </>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center p-4">
+            <div className="text-center">
+              <div className="text-4xl font-bebas text-gray-500 leading-tight">
+                {title}
               </div>
-            )}
-          </div>
-          
-          {/* Status badges */}
-          <div className="absolute top-2 left-2 flex flex-col space-y-1">
-            {isWatched && (
-              <Badge variant="default" className="text-xs">
-                {type === "movie" ? "Watched" : "Completed"}
-              </Badge>
-            )}
-            {isInWatchlist && (
-              <Badge variant="secondary" className="text-xs">
-                Watchlist
-              </Badge>
-            )}
-          </div>
-          
-          {/* Rating badge */}
-          {currentRating > 0 && (
-            <div className="absolute top-2 right-2">
-              <Badge variant="outline" className="text-xs bg-black/50 text-white border-white/20">
-                <Star className="h-3 w-3 mr-1 fill-current" />
-                {currentRating}
-              </Badge>
-            </div>
-          )}
-        </div>
-        
-        {/* Info section */}
-        <div className="p-4">
-          <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-            {title}
-          </h3>
-          
-          <div className="flex items-center space-x-2 text-xs text-gray-500 mb-2">
-            {year && (
-              <>
-                <Calendar className="h-3 w-3" />
-                <span>{year}</span>
-              </>
-            )}
-            <Badge variant="outline" className="text-xs">
-              {type === "movie" ? "Movie" : "TV Show"}
-            </Badge>
-          </div>
-          
-          {genres.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
-              {genres.slice(0, 2).map((genre) => (
-                <Badge key={genre} variant="secondary" className="text-xs">
-                  {genre}
-                </Badge>
-              ))}
-              {genres.length > 2 && (
-                <Badge variant="secondary" className="text-xs">
-                  +{genres.length - 2}
-                </Badge>
+              {year && (
+                <div className="text-sm text-gray-600 mt-2">{year}</div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-poster-gradient opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
+
+        {/* Shine Effect */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
+            animate={isHovered ? {
+              x: ["-100%", "100%"],
+            } : {}}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+          />
+        </div>
+
+        {/* Status Badges */}
+        <div className="absolute top-3 left-3 flex flex-col gap-2 z-20">
+          {isWatched && (
+            <motion.div
+              className="bg-success/90 backdrop-blur-sm px-2 py-1 flex items-center gap-1"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Check className="w-3 h-3 text-white" />
+              <span className="text-xs font-semibold text-white">
+                {type === "movie" ? "WATCHED" : "COMPLETED"}
+              </span>
+            </motion.div>
           )}
           
-          {overview && (
-            <p className="text-xs text-gray-600 line-clamp-3">
-              {overview}
-            </p>
+          {isInWatchlist && (
+            <motion.div
+              className="bg-purple-600/90 backdrop-blur-sm px-2 py-1 flex items-center gap-1"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Plus className="w-3 h-3 text-white" />
+              <span className="text-xs font-semibold text-white">WATCHLIST</span>
+            </motion.div>
           )}
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Rating Badge */}
+        {currentRating > 0 && (
+          <motion.div
+            className="absolute top-3 right-3 bg-black/80 backdrop-blur-sm px-2 py-1 flex items-center gap-1"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+            <span className="text-xs font-semibold text-white">
+              {currentRating.toFixed(1)}
+            </span>
+          </motion.div>
+        )}
+
+        {/* Progress Ring for TV Shows */}
+        {type === "tv" && progress > 0 && (
+          <motion.div
+            className="absolute top-3 right-3 z-20"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5, type: "spring" }}
+          >
+            <ProgressRing
+              progress={progress}
+              size={40}
+              strokeWidth={3}
+              showPercentage={false}
+              color="primary"
+              animated={false}
+            />
+          </motion.div>
+        )}
+
+        {/* Hover Controls Overlay */}
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 z-30"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ 
+            opacity: isHovered ? 1 : 0,
+            scale: isHovered ? 1 : 0.8,
+          }}
+          transition={{ duration: 0.2 }}
+        >
+          <div className="flex gap-3">
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <GlowingButton
+                variant="primary"
+                size="sm"
+                className="px-4 py-2 text-sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Handle play action
+                }}
+              >
+                <Play className="w-4 h-4 mr-2 fill-current" />
+                Play
+              </GlowingButton>
+            </motion.div>
+            
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <GlowingButton
+                variant={isWatched ? "accent" : "ghost"}
+                size="sm"
+                className="p-2"
+                onClick={handleWatchedClick}
+              >
+                {isWatched ? (
+                  <Check className="w-4 h-4" />
+                ) : (
+                  <Clock className="w-4 h-4" />
+                )}
+              </GlowingButton>
+            </motion.div>
+            
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <GlowingButton
+                variant={isInWatchlist ? "accent" : "ghost"}
+                size="sm"
+                className="p-2"
+                onClick={handleWatchlistClick}
+              >
+                <Plus className={cn(
+                  "w-4 h-4 transition-transform duration-200",
+                  isInWatchlist && "rotate-45"
+                )} />
+              </GlowingButton>
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* Content Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <h3 className="font-bold text-white text-base mb-2 line-clamp-2 text-shadow-sm">
+              {title}
+            </h3>
+            
+            <div className="flex items-center gap-2 mb-2">
+              {year && (
+                <div className="flex items-center gap-1 text-xs text-gray-300">
+                  <Calendar className="w-3 h-3" />
+                  {year}
+                </div>
+              )}
+              
+              <Badge
+                variant={type === "movie" ? "secondary" : "outline"}
+                className="text-xs bg-black/50 text-white border-white/20"
+              >
+                {type === "movie" ? "Movie" : "TV Show"}
+              </Badge>
+            </div>
+            
+            {/* TV Show Progress */}
+            {type === "tv" && watchedEpisodes && totalEpisodes && (
+              <div className="text-xs text-gray-300 mb-2">
+                {watchedEpisodes} / {totalEpisodes} episodes
+              </div>
+            )}
+            
+            {/* Genres */}
+            {genres.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {genres.slice(0, 2).map((genre) => (
+                  <span
+                    key={genre}
+                    className="text-xs text-gray-400 bg-black/30 px-2 py-1"
+                  >
+                    {genre}
+                  </span>
+                ))}
+                {genres.length > 2 && (
+                  <span className="text-xs text-gray-400 bg-black/30 px-2 py-1">
+                    +{genres.length - 2}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Rating Stars */}
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <motion.button
+                  key={star}
+                  onClick={(e) => handleRatingClick(e, star)}
+                  className="p-0.5 group/star"
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <Star
+                    className={cn(
+                      "w-3 h-3 transition-all duration-200",
+                      star <= currentRating
+                        ? "fill-amber-400 text-amber-400 drop-shadow-sm"
+                        : "text-gray-400 group-hover/star:text-amber-300"
+                    )}
+                  />
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Progress Bar for TV Shows (bottom edge) */}
+        {type === "tv" && progress > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/50 z-30">
+            <motion.div
+              className="h-full progress-neon"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ delay: 0.8, duration: 1.2, ease: "easeOut" }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 3D Glow Effect */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+        <div className="absolute inset-0 shadow-cinema-card transform-gpu" />
+      </div>
+    </motion.div>
   );
 }
