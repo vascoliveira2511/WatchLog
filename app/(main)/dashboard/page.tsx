@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import {
   Play,
-  Calendar,
   Clock,
   TrendingUp,
   Star,
@@ -14,46 +14,38 @@ import {
   Flame,
   Users,
   Eye,
+  Info,
+  Calendar,
+  Sparkles,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { MediaCard } from "@/components/media/media-card";
-import { ProgressBar } from "@/components/media/progress-bar";
+import { CinematicBackground } from "@/components/ui/cinematic-background";
+import { GlowingButton } from "@/components/ui/glowing-button";
+import { ProgressRing } from "@/components/ui/progress-ring";
+import { FilmReel } from "@/components/ui/film-reel";
+import { cn } from "@/lib/utils";
 
-// Mock data for demonstration
-const mockUpNext = [
-  {
-    id: 1,
-    showTitle: "Breaking Bad",
-    showId: 1,
-    seasonNumber: 3,
-    episodeNumber: 7,
-    episodeTitle: "One Minute",
-    episodeOverview:
-      "Hank's increasing volatility forces a confrontation with Jesse and trouble at work. Skyler pressures Walt to make a deal. Gus' actions have severe consequences.",
-    airDate: "2010-05-02",
-    runtime: 47,
-    stillPath: "/image1.jpg",
-    posterPath: "/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
-  },
-  {
-    id: 2,
-    showTitle: "The Office",
-    showId: 2,
-    seasonNumber: 4,
-    episodeNumber: 12,
-    episodeTitle: "The Deposition",
-    episodeOverview:
-      "Michael is deposed when he's forced to appear in court after Jan sues Dunder Mifflin. Kelly and Ryan resume their on-and-off relationship.",
-    airDate: "2008-04-17",
-    runtime: 22,
-    stillPath: "/image2.jpg",
-    posterPath: "/7DJKHzAi83BmQrWLrYYOqcoKfhR.jpg",
-  },
-];
+// Mock hero show data
+const mockHeroShow = {
+  id: 1,
+  title: "Breaking Bad",
+  overview: "Walter White, a struggling high school chemistry teacher, is diagnosed with inoperable lung cancer. He turns to a life of crime, producing and selling methamphetamine with his former student Jesse Pinkman.",
+  backdropPath: "/ggFHVNu6YYI5L9pCfOacjizRGt.jpg", // Using poster as backdrop for demo
+  rating: 9.5,
+  year: 2008,
+  seasons: 5,
+  episodes: 62,
+  watchedEpisodes: 47,
+  progress: 75,
+  genres: ["Drama", "Crime", "Thriller"],
+  runtime: 47,
+  status: "watching" as const,
+};
 
+// Mock data
 const mockCurrentlyWatching = [
   {
     id: 1,
@@ -62,7 +54,10 @@ const mockCurrentlyWatching = [
     progress: 75,
     totalEpisodes: 62,
     watchedEpisodes: 47,
-    status: "watching" as const,
+    year: 2008,
+    type: "tv" as const,
+    rating: 9.5 * 2, // Convert to 10-point scale
+    genres: ["Drama", "Crime"],
   },
   {
     id: 2,
@@ -71,31 +66,85 @@ const mockCurrentlyWatching = [
     progress: 60,
     totalEpisodes: 201,
     watchedEpisodes: 120,
-    status: "watching" as const,
-  },
-];
-
-const mockRecentActivity = [
-  {
-    id: 1,
-    type: "watch",
-    showTitle: "Breaking Bad",
-    episodeTitle: "Phoenix",
-    timestamp: "2 hours ago",
-    rating: 5,
-  },
-  {
-    id: 2,
-    type: "complete",
-    showTitle: "Stranger Things",
-    season: 4,
-    timestamp: "1 day ago",
+    year: 2005,
+    type: "tv" as const,
+    rating: 8.7 * 2,
+    genres: ["Comedy", "Sitcom"],
   },
   {
     id: 3,
-    type: "add",
-    showTitle: "Better Call Saul",
-    timestamp: "2 days ago",
+    title: "Stranger Things",
+    posterPath: "/49WJfeN0moxb9IPfGn8AIqMGskD.jpg",
+    progress: 90,
+    totalEpisodes: 42,
+    watchedEpisodes: 38,
+    year: 2016,
+    type: "tv" as const,
+    rating: 8.7 * 2,
+    genres: ["Sci-Fi", "Horror"],
+  },
+  {
+    id: 4,
+    title: "Better Call Saul",
+    posterPath: "/fC2HDm5t0kHl7mTm7jxMR31EPot.jpg",
+    progress: 45,
+    totalEpisodes: 63,
+    watchedEpisodes: 28,
+    year: 2015,
+    type: "tv" as const,
+    rating: 8.9 * 2,
+    genres: ["Drama", "Crime"],
+  },
+  {
+    id: 5,
+    title: "The Crown",
+    posterPath: "/1M876KPjulVwppEpldhdc8V4o68.jpg",
+    progress: 25,
+    totalEpisodes: 60,
+    watchedEpisodes: 15,
+    year: 2016,
+    type: "tv" as const,
+    rating: 8.6 * 2,
+    genres: ["Drama", "History"],
+  },
+];
+
+const mockRecentlyAdded = [
+  {
+    id: 10,
+    title: "The Last of Us",
+    posterPath: "/uKvVjHNqB5VmOrdxqAt2F7J78ED.jpg",
+    year: 2023,
+    type: "tv" as const,
+    rating: 8.8 * 2,
+    genres: ["Drama", "Horror"],
+  },
+  {
+    id: 11,
+    title: "House of the Dragon",
+    posterPath: "/7QMsOTMUswlwxJP0rTTZfmz2tX2.jpg",
+    year: 2022,
+    type: "tv" as const,
+    rating: 8.5 * 2,
+    genres: ["Fantasy", "Drama"],
+  },
+  {
+    id: 12,
+    title: "Wednesday",
+    posterPath: "/9PFonBhy4cQy7Jz20NpMygczOkv.jpg",
+    year: 2022,
+    type: "tv" as const,
+    rating: 8.1 * 2,
+    genres: ["Comedy", "Horror"],
+  },
+  {
+    id: 13,
+    title: "Top Gun: Maverick",
+    posterPath: "/62HCnUTziyWcpDaBO2i1DX17ljH.jpg",
+    year: 2022,
+    type: "movie" as const,
+    rating: 8.3 * 2,
+    genres: ["Action", "Drama"],
   },
 ];
 
@@ -116,23 +165,15 @@ const mockStats = {
     episodes: 3204,
     timeWatched: 89340, // minutes
   },
+  streak: 12,
 };
 
 export default function DashboardPage() {
-  const [upNext, setUpNext] = useState(mockUpNext);
-  const [currentlyWatching, setCurrentlyWatching] = useState(
-    mockCurrentlyWatching
-  );
-  const [recentActivity, setRecentActivity] = useState(mockRecentActivity);
-  const [stats, setStats] = useState(mockStats);
+  const [currentlyWatching] = useState(mockCurrentlyWatching);
+  const [recentlyAdded] = useState(mockRecentlyAdded);
+  const [stats] = useState(mockStats);
 
   const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
-
-  const formatTimeShort = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     return hours > 0 ? `${hours}h` : `${minutes}m`;
   };
@@ -142,293 +183,343 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
-          <p className="text-gray-600 mt-1">
-            Ready to continue your watch journey?
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Badge variant="secondary" className="flex items-center space-x-1">
-            <Flame className="h-3 w-3" />
-            <span>12-day streak</span>
-          </Badge>
-        </div>
-      </div>
+    <CinematicBackground variant="default" className="min-h-screen">
+      <div className="space-y-12 pb-16">
+        {/* Cinematic Hero Section */}
+        <motion.section
+          className="relative h-[80vh] flex items-end overflow-hidden -mx-6 md:-mx-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.2 }}
+        >
+          {/* Hero Background */}
+          <div className="absolute inset-0">
+            <Image
+              src={`https://image.tmdb.org/t/p/original${mockHeroShow.backdropPath}`}
+              alt={mockHeroShow.title}
+              fill
+              className="object-cover"
+              priority
+            />
+            
+            {/* Multi-layer Gradients */}
+            <div className="absolute inset-0 bg-hero-gradient" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent" />
+          </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Play className="h-4 w-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">This Week</p>
-                <p className="text-lg font-bold">
-                  {stats.thisWeek.episodes} episodes
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Hero Content */}
+          <div className="relative z-10 px-6 md:px-8 pb-16 max-w-2xl">
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+            >
+              {/* Featured Badge */}
+              <motion.div
+                className="flex items-center gap-2 mb-4"
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <Sparkles className="w-5 h-5 text-amber-400" />
+                <span className="text-amber-400 font-semibold text-sm uppercase tracking-wider">
+                  Continue Watching
+                </span>
+              </motion.div>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Clock className="h-4 w-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Time Watched</p>
-                <p className="text-lg font-bold">
-                  {formatTimeShort(stats.thisWeek.timeWatched)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              {/* Title */}
+              <h1 className="text-6xl md:text-7xl font-bebas text-white mb-4 text-shadow-lg">
+                {mockHeroShow.title}
+              </h1>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Users className="h-4 w-4 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Shows</p>
-                <p className="text-lg font-bold">
-                  {currentlyWatching.length} watching
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <TrendingUp className="h-4 w-4 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">All Time</p>
-                <p className="text-lg font-bold">
-                  {formatNumber(stats.allTime.episodes)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="xl:col-span-2 space-y-8">
-          {/* Up Next Section */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="flex items-center space-x-2">
-                <Play className="h-5 w-5 text-blue-600" />
-                <span>Up Next</span>
-              </CardTitle>
-              <Link href="/shows">
-                <Button variant="ghost" size="sm">
-                  View All <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {upNext.map((episode) => (
-                <div
-                  key={episode.id}
-                  className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                >
-                  <div className="relative w-20 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                    {episode.posterPath && (
-                      <Image
-                        src={`https://image.tmdb.org/t/p/w342${episode.posterPath}`}
-                        alt={episode.showTitle}
-                        fill
-                        className="object-cover"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                      <Play className="h-4 w-4 text-white" />
-                    </div>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h4 className="font-medium text-sm truncate">
-                        {episode.showTitle}
-                      </h4>
-                      <Badge variant="outline" className="text-xs">
-                        S{episode.seasonNumber}E{episode.episodeNumber}
-                      </Badge>
-                    </div>
-
-                    <h3 className="font-semibold mb-1 truncate">
-                      {episode.episodeTitle}
-                    </h3>
-                    <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-                      {episode.episodeOverview}
-                    </p>
-
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <span className="flex items-center">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {episode.runtime}min
-                      </span>
-                      <span className="flex items-center">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {new Date(episode.airDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  <Button size="sm">
-                    <Play className="h-4 w-4 mr-2" />
-                    Watch
-                  </Button>
-                </div>
-              ))}
-
-              {upNext.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Eye className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>No episodes up next!</p>
-                  <p className="text-sm">
-                    Start watching a show to see your next episodes here.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Continue Watching */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Continue Watching</CardTitle>
-              <Link href="/shows">
-                <Button variant="ghost" size="sm">
-                  View All <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {currentlyWatching.map((show) => (
-                  <div key={show.id} className="space-y-3">
-                    <ProgressBar
-                      title={show.title}
-                      current={show.watchedEpisodes}
-                      total={show.totalEpisodes}
-                      type="episodes"
-                      status={show.status}
-                      size="md"
-                    />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-start space-x-3 text-sm"
-                >
-                  <div className="p-1 bg-blue-100 rounded">
-                    {activity.type === "watch" && (
-                      <Play className="h-3 w-3 text-blue-600" />
-                    )}
-                    {activity.type === "complete" && (
-                      <Star className="h-3 w-3 text-yellow-600" />
-                    )}
-                    {activity.type === "add" && (
-                      <Plus className="h-3 w-3 text-green-600" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{activity.showTitle}</p>
-                    {activity.type === "watch" && (
-                      <p className="text-gray-600">{activity.episodeTitle}</p>
-                    )}
-                    {activity.type === "complete" && (
-                      <p className="text-gray-600">
-                        Completed Season {activity.season}
-                      </p>
-                    )}
-                    {activity.type === "add" && (
-                      <p className="text-gray-600">Added to watchlist</p>
-                    )}
-                    <p className="text-gray-400 text-xs">
-                      {activity.timestamp}
-                    </p>
-                  </div>
-                  {activity.rating && (
-                    <div className="flex items-center">
-                      <Star className="h-3 w-3 fill-current text-yellow-400" />
-                      <span className="ml-1 text-xs font-medium">
-                        {activity.rating}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">This Month</span>
-                  <span className="font-medium">
-                    {stats.thisMonth.episodes} episodes
+              {/* Meta Info */}
+              <div className="flex items-center gap-6 mb-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                  <span className="text-white font-semibold">
+                    {mockHeroShow.rating.toFixed(1)}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Time Watched</span>
-                  <span className="font-medium">
-                    {formatTime(stats.thisMonth.timeWatched)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Movies</span>
-                  <span className="font-medium">{stats.thisMonth.movies}</span>
+                <span className="text-gray-300">{mockHeroShow.year}</span>
+                <span className="text-gray-300">
+                  {mockHeroShow.seasons} Season{mockHeroShow.seasons > 1 ? 's' : ''}
+                </span>
+                <div className="flex gap-2">
+                  {mockHeroShow.genres.slice(0, 2).map((genre) => (
+                    <Badge
+                      key={genre}
+                      variant="outline"
+                      className="bg-black/30 border-white/20 text-white"
+                    >
+                      {genre}
+                    </Badge>
+                  ))}
                 </div>
               </div>
 
-              <div className="pt-4 border-t">
-                <Link href="/stats">
-                  <Button variant="outline" size="sm" className="w-full">
-                    View Detailed Stats
-                  </Button>
-                </Link>
+              {/* Overview */}
+              <p className="text-gray-200 text-lg mb-8 max-w-xl leading-relaxed">
+                {mockHeroShow.overview}
+              </p>
+
+              {/* Progress */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-gray-300 text-sm">
+                    Episode {mockHeroShow.watchedEpisodes} of {mockHeroShow.episodes}
+                  </span>
+                  <span className="text-gray-300 text-sm">
+                    {mockHeroShow.progress}% Complete
+                  </span>
+                </div>
+                <div className="w-full bg-black/50 h-2">
+                  <motion.div
+                    className="h-full progress-neon"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${mockHeroShow.progress}%` }}
+                    transition={{ delay: 1, duration: 1.5 }}
+                  />
+                </div>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-4">
+                <GlowingButton
+                  variant="primary"
+                  size="lg"
+                  className="px-8 py-4"
+                >
+                  <Play className="w-5 h-5 mr-3 fill-current" />
+                  Continue Watching
+                </GlowingButton>
+                
+                <GlowingButton variant="ghost" size="lg" className="px-8 py-4">
+                  <Info className="w-5 h-5 mr-3" />
+                  More Info
+                </GlowingButton>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Floating Elements */}
+          <motion.div
+            className="absolute top-8 right-8 hidden lg:block"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.8, type: "spring", stiffness: 100 }}
+          >
+            <ProgressRing
+              progress={mockHeroShow.progress}
+              size={120}
+              strokeWidth={6}
+              color="primary"
+              className="backdrop-blur-sm bg-black/20 rounded-full p-4"
+            />
+          </motion.div>
+        </motion.section>
+
+        <div className="px-6 md:px-8 space-y-16">
+          {/* Stats Overview */}
+          <motion.section
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+          >
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                {
+                  icon: Play,
+                  label: "This Week",
+                  value: `${stats.thisWeek.episodes}`,
+                  subtitle: "episodes",
+                  color: "purple",
+                },
+                {
+                  icon: Clock,
+                  label: "Time Watched",
+                  value: formatTime(stats.thisWeek.timeWatched),
+                  subtitle: "this week",
+                  color: "emerald",
+                },
+                {
+                  icon: Users,
+                  label: "Active Shows",
+                  value: `${currentlyWatching.length}`,
+                  subtitle: "watching",
+                  color: "amber",
+                },
+                {
+                  icon: TrendingUp,
+                  label: "All Time",
+                  value: formatNumber(stats.allTime.episodes),
+                  subtitle: "episodes",
+                  color: "blue",
+                },
+              ].map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  className="stagger-item"
+                  style={{ animationDelay: `${0.1 + index * 0.1}s` }}
+                >
+                  <Card className="bg-background-card/80 backdrop-blur-sm border-border hover:bg-background-card/90 transition-all duration-300 group">
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-4">
+                        <div className={cn(
+                          "p-3 rounded-full bg-gradient-to-br",
+                          stat.color === "purple" && "from-purple-500/20 to-purple-600/20",
+                          stat.color === "emerald" && "from-emerald-500/20 to-emerald-600/20",
+                          stat.color === "amber" && "from-amber-500/20 to-amber-600/20",
+                          stat.color === "blue" && "from-blue-500/20 to-blue-600/20"
+                        )}>
+                          <stat.icon className={cn(
+                            "w-6 h-6",
+                            stat.color === "purple" && "text-purple-400",
+                            stat.color === "emerald" && "text-emerald-400",
+                            stat.color === "amber" && "text-amber-400",
+                            stat.color === "blue" && "text-blue-400"
+                          )} />
+                        </div>
+                        <div>
+                          <p className="text-foreground-muted text-sm">
+                            {stat.label}
+                          </p>
+                          <p className="text-2xl font-bold text-white group-hover:text-purple-300 transition-colors">
+                            {stat.value}
+                          </p>
+                          <p className="text-foreground-muted text-xs">
+                            {stat.subtitle}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Streak Badge */}
+            <motion.div
+              className="flex justify-center mt-8"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.8, type: "spring" }}
+            >
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-black px-6 py-2 text-lg font-semibold animate-pulse-glow">
+                <Flame className="w-4 h-4 mr-2" />
+                {stats.streak} Day Streak! 🔥
+              </Badge>
+            </motion.div>
+          </motion.section>
+
+          {/* Continue Watching Section */}
+          <motion.section
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.8 }}
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bebas text-white">Continue Watching</h2>
+              <Link href="/shows">
+                <GlowingButton variant="ghost" size="sm">
+                  View All
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </GlowingButton>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              {currentlyWatching.map((show) => (
+                <MediaCard
+                  key={show.id}
+                  id={show.id}
+                  title={show.title}
+                  year={show.year}
+                  posterPath={show.posterPath}
+                  type={show.type}
+                  rating={show.rating}
+                  genres={show.genres}
+                  progress={show.progress}
+                  totalEpisodes={show.totalEpisodes}
+                  watchedEpisodes={show.watchedEpisodes}
+                  className="stagger-item"
+                />
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Recently Added Section */}
+          <motion.section
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.8 }}
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bebas text-white">Recently Added</h2>
+              <Link href="/shows">
+                <GlowingButton variant="ghost" size="sm">
+                  Explore More
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </GlowingButton>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {recentlyAdded.map((item) => (
+                <MediaCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  year={item.year}
+                  posterPath={item.posterPath}
+                  type={item.type}
+                  rating={item.rating}
+                  genres={item.genres}
+                  className="stagger-item"
+                />
+              ))}
+            </div>
+          </motion.section>
+
+          {/* Quick Actions */}
+          <motion.section
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 1, duration: 0.8 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            <Card className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border-purple-500/30 hover:from-purple-600/30 hover:to-purple-800/30 transition-all duration-300 group cursor-pointer">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <Eye className="w-8 h-8 text-purple-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Discover New</h3>
+                <p className="text-gray-400 text-sm">Find your next favorite show or movie</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-amber-600/20 to-amber-800/20 border-amber-500/30 hover:from-amber-600/30 hover:to-amber-800/30 transition-all duration-300 group cursor-pointer">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-8 h-8 text-amber-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">View Stats</h3>
+                <p className="text-gray-400 text-sm">See your watching patterns and achievements</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-emerald-600/20 to-emerald-800/20 border-emerald-500/30 hover:from-emerald-600/30 hover:to-emerald-800/30 transition-all duration-300 group cursor-pointer">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                  <Plus className="w-8 h-8 text-emerald-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Add Content</h3>
+                <p className="text-gray-400 text-sm">Build your personal watchlist</p>
+              </CardContent>
+            </Card>
+          </motion.section>
         </div>
       </div>
-    </div>
+    </CinematicBackground>
   );
 }

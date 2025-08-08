@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { GlowingButton } from "@/components/ui/glowing-button";
+import { FilmReel } from "@/components/ui/film-reel";
+import { AlertCircle, Eye, EyeOff, CheckCircle, UserPlus, Sparkles, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -55,111 +57,238 @@ export default function SignUpPage() {
   const isFormValid = email && password && username && displayName;
 
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">
-          Join <span className="text-blue-600">WatchLog</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSignUp} className="space-y-4">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="w-full"
+    >
+      {/* Cinema-themed Card */}
+      <div className="glass-premium border border-white/10 p-8 backdrop-blur-xl">
+        {/* Header with Logo */}
+        <motion.div
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+        >
+          <div className="flex items-center justify-center mb-4">
+            <FilmReel size="lg" />
+          </div>
+          
+          <h1 className="text-4xl font-bebas text-white mb-2">
+            Join The Cinema
+          </h1>
+          
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-gray-400">Welcome to</span>
+            <div className="font-bebas text-2xl tracking-wider">
+              <span className="text-white">Watch</span>
+              <span className="gradient-text">Log</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center gap-1 mt-2">
+            <Users className="w-4 h-4 text-purple-400" />
+            <span className="text-gray-400 text-sm">Your personal movie & TV companion</span>
+          </div>
+        </motion.div>
+
+        <motion.form
+          onSubmit={handleSignUp}
+          className="space-y-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+        >
           {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-red-500/10 border border-red-500/20 backdrop-blur-sm p-4 flex items-center gap-3"
+            >
+              <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+              <span className="text-red-300 text-sm">{error}</span>
+            </motion.div>
           )}
           
           {success && (
-            <Alert className="border-green-200 bg-green-50">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">{success}</AlertDescription>
-            </Alert>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm p-4 flex items-center gap-3"
+            >
+              <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+              <span className="text-emerald-300 text-sm">{success}</span>
+            </motion.div>
           )}
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="username" className="text-sm font-medium">Username</label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="Choose a username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                required
-              />
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <label htmlFor="username" className="block text-white text-sm font-semibold mb-2">
+                  Username
+                </label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="cinephile123"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  className={cn(
+                    "bg-black/40 border border-white/20 text-white placeholder:text-gray-500",
+                    "focus:bg-black/60 focus:border-purple-500/50 focus:shadow-neon-purple",
+                    "transition-all duration-300 backdrop-blur-sm"
+                  )}
+                  required
+                />
+              </motion.div>
+              
+              <motion.div
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.55 }}
+              >
+                <label htmlFor="displayName" className="block text-white text-sm font-semibold mb-2">
+                  Display Name
+                </label>
+                <Input
+                  id="displayName"
+                  type="text"
+                  placeholder="Cinema Lover"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className={cn(
+                    "bg-black/40 border border-white/20 text-white placeholder:text-gray-500",
+                    "focus:bg-black/60 focus:border-purple-500/50 focus:shadow-neon-purple",
+                    "transition-all duration-300 backdrop-blur-sm"
+                  )}
+                  required
+                />
+              </motion.div>
             </div>
             
-            <div className="space-y-2">
-              <label htmlFor="displayName" className="text-sm font-medium">Display Name</label>
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              <label htmlFor="email" className="block text-white text-sm font-semibold mb-2">
+                Email Address
+              </label>
               <Input
-                id="displayName"
-                type="text"
-                placeholder="Your display name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">Email</label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">Password</label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Create a password (min 6 characters)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-400" />
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={cn(
+                  "bg-black/40 border border-white/20 text-white placeholder:text-gray-500",
+                  "focus:bg-black/60 focus:border-purple-500/50 focus:shadow-neon-purple",
+                  "transition-all duration-300 backdrop-blur-sm"
                 )}
-              </Button>
-            </div>
+                required
+              />
+            </motion.div>
+            
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.65 }}
+            >
+              <label htmlFor="password" className="block text-white text-sm font-semibold mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create a strong password (min 6 characters)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={cn(
+                    "bg-black/40 border border-white/20 text-white placeholder:text-gray-500 pr-12",
+                    "focus:bg-black/60 focus:border-purple-500/50 focus:shadow-neon-purple",
+                    "transition-all duration-300 backdrop-blur-sm"
+                  )}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </motion.div>
           </div>
           
-          <Button type="submit" className="w-full" disabled={loading || !isFormValid}>
-            {loading ? "Creating account..." : "Create account"}
-          </Button>
-        </form>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.7 }}
+          >
+            <GlowingButton
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="w-full py-4 text-lg font-semibold"
+              disabled={loading || !isFormValid}
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Creating Account...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-5 h-5" />
+                  Start Your Journey
+                </div>
+              )}
+            </GlowingButton>
+          </motion.div>
+        </motion.form>
         
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{" "}
-            <Link href="/auth/login" className="text-blue-600 hover:underline font-medium">
-              Sign in
-            </Link>
-          </p>
-        </div>
-        
-        <div className="mt-4 text-xs text-gray-500 text-center">
-          By creating an account, you agree that WatchLog is completely free forever.
-        </div>
-      </CardContent>
-    </Card>
+        <motion.div
+          className="mt-8 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+        >
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-white/20" />
+            <span className="text-gray-400 text-sm">Already have an account?</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-white/20 via-white/20 to-transparent" />
+          </div>
+          
+          <Link href="/auth/login">
+            <GlowingButton variant="ghost" size="lg" className="w-full">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Sign In Instead
+              </div>
+            </GlowingButton>
+          </Link>
+          
+          <div className="mt-6 p-4 bg-gradient-to-r from-purple-500/10 to-amber-500/10 border border-white/10">
+            <p className="text-gray-300 text-sm mb-2 font-semibold">🎬 Free Forever Promise</p>
+            <p className="text-gray-400 text-xs leading-relaxed">
+              WatchLog will always be completely free. Track unlimited movies and shows, 
+              no ads, no premium tiers, just pure cinema love.
+            </p>
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
   );
 }
