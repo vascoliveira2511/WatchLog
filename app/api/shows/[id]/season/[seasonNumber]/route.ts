@@ -3,11 +3,12 @@ import { tmdbClient } from '@/lib/tmdb/client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; seasonNumber: string } }
+  { params }: { params: Promise<{ id: string; seasonNumber: string }> }
 ) {
   try {
-    const showId = parseInt(params.id);
-    const seasonNumber = parseInt(params.seasonNumber);
+    const { id: idParam, seasonNumber: seasonParam } = await params;
+    const showId = parseInt(idParam);
+    const seasonNumber = parseInt(seasonParam);
     
     if (isNaN(showId) || isNaN(seasonNumber)) {
       return NextResponse.json(
