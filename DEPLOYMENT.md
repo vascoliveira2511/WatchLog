@@ -1,4 +1,46 @@
-# Deployment Guide for WatchLog
+# WatchLog Deployment Checklist
+
+## ✅ Completed Setup
+- [x] Supabase environment variables configured
+- [x] `.env.local` created with credentials  
+- [x] Supabase client initialized in `lib/supabase.ts`
+- [x] Development server tested and running
+
+## 🚀 Deployment Steps
+
+### 1. Database Setup
+- [ ] Create necessary tables in Supabase dashboard
+- [ ] Set up Row Level Security (RLS) policies
+- [ ] Configure authentication settings
+
+### 2. Environment Variables
+- [ ] Add environment variables to production deployment platform
+- [ ] Verify all required variables are present
+
+### 3. Build & Deploy
+- [ ] Run `npm run build` to test production build
+- [ ] Deploy to chosen platform (Vercel/Netlify/etc.)
+- [ ] Test deployed application
+
+### 4. Post-Deployment
+- [ ] Verify database connections work in production
+- [ ] Test authentication flow
+- [ ] Check all features function correctly
+
+## 🔧 Configuration Details
+
+**Supabase URL:** `https://rmoairdlsnuabxhszhhj.supabase.co`
+**Environment File:** `.env.local` (local development only)
+
+## 📝 Next Steps
+1. Set up database schema in Supabase
+2. Implement authentication pages
+3. Create main application features
+4. Configure production deployment
+
+---
+
+# Full Deployment Guide for WatchLog
 
 This guide covers various deployment options for WatchLog, from simple cloud deployment to self-hosting.
 

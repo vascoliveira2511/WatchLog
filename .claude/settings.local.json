@@ -7,7 +7,15 @@
       "Bash(npx shadcn@latest init:*)",
       "Bash(npx shadcn@latest add:*)",
       "Bash(npm run dev:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(tasklist:*)",
+      "Bash(npm run build:*)",
+      "Bash(dir:*)",
+      "Bash(find:*)",
+      "Bash(cp:*)",
+      "Bash(supabase:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }
