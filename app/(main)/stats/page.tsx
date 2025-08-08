@@ -121,6 +121,10 @@ export default function StatsPage() {
     return mockStats.overview.completionRate;
   };
 
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('en-US').format(num);
+  };
+
   const currentMonth = new Date().getMonth();
   const thisMonthData = mockStats.byMonth[currentMonth];
 
@@ -163,7 +167,7 @@ export default function StatsPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Episodes</p>
-                <p className="text-2xl font-bold">{mockStats.overview.totalEpisodes.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{formatNumber(mockStats.overview.totalEpisodes)}</p>
               </div>
             </div>
           </CardContent>

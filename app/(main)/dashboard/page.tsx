@@ -3,17 +3,17 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { 
-  Play, 
-  Calendar, 
-  Clock, 
-  TrendingUp, 
-  Star, 
+import {
+  Play,
+  Calendar,
+  Clock,
+  TrendingUp,
+  Star,
   Plus,
   ArrowRight,
   Flame,
   Users,
-  Eye
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +31,8 @@ const mockUpNext = [
     seasonNumber: 3,
     episodeNumber: 7,
     episodeTitle: "One Minute",
-    episodeOverview: "Hank's increasing volatility forces a confrontation with Jesse and trouble at work. Skyler pressures Walt to make a deal. Gus' actions have severe consequences.",
+    episodeOverview:
+      "Hank's increasing volatility forces a confrontation with Jesse and trouble at work. Skyler pressures Walt to make a deal. Gus' actions have severe consequences.",
     airDate: "2010-05-02",
     runtime: 47,
     stillPath: "/image1.jpg",
@@ -44,7 +45,8 @@ const mockUpNext = [
     seasonNumber: 4,
     episodeNumber: 12,
     episodeTitle: "The Deposition",
-    episodeOverview: "Michael is deposed when he's forced to appear in court after Jan sues Dunder Mifflin. Kelly and Ryan resume their on-and-off relationship.",
+    episodeOverview:
+      "Michael is deposed when he's forced to appear in court after Jan sues Dunder Mifflin. Kelly and Ryan resume their on-and-off relationship.",
     airDate: "2008-04-17",
     runtime: 22,
     stillPath: "/image2.jpg",
@@ -118,7 +120,9 @@ const mockStats = {
 
 export default function DashboardPage() {
   const [upNext, setUpNext] = useState(mockUpNext);
-  const [currentlyWatching, setCurrentlyWatching] = useState(mockCurrentlyWatching);
+  const [currentlyWatching, setCurrentlyWatching] = useState(
+    mockCurrentlyWatching
+  );
   const [recentActivity, setRecentActivity] = useState(mockRecentActivity);
   const [stats, setStats] = useState(mockStats);
 
@@ -133,13 +137,19 @@ export default function DashboardPage() {
     return hours > 0 ? `${hours}h` : `${minutes}m`;
   };
 
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat("en-US").format(num);
+  };
+
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
-          <p className="text-gray-600 mt-1">Ready to continue your watch journey?</p>
+          <p className="text-gray-600 mt-1">
+            Ready to continue your watch journey?
+          </p>
         </div>
         <div className="flex items-center space-x-3">
           <Badge variant="secondary" className="flex items-center space-x-1">
@@ -159,7 +169,9 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">This Week</p>
-                <p className="text-lg font-bold">{stats.thisWeek.episodes} episodes</p>
+                <p className="text-lg font-bold">
+                  {stats.thisWeek.episodes} episodes
+                </p>
               </div>
             </div>
           </CardContent>
@@ -173,7 +185,9 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Time Watched</p>
-                <p className="text-lg font-bold">{formatTimeShort(stats.thisWeek.timeWatched)}</p>
+                <p className="text-lg font-bold">
+                  {formatTimeShort(stats.thisWeek.timeWatched)}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -187,7 +201,9 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Shows</p>
-                <p className="text-lg font-bold">{currentlyWatching.length} watching</p>
+                <p className="text-lg font-bold">
+                  {currentlyWatching.length} watching
+                </p>
               </div>
             </div>
           </CardContent>
@@ -201,7 +217,9 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">All Time</p>
-                <p className="text-lg font-bold">{stats.allTime.episodes.toLocaleString()}</p>
+                <p className="text-lg font-bold">
+                  {formatNumber(stats.allTime.episodes)}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -243,20 +261,24 @@ export default function DashboardPage() {
                       <Play className="h-4 w-4 text-white" />
                     </div>
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <h4 className="font-medium text-sm truncate">{episode.showTitle}</h4>
+                      <h4 className="font-medium text-sm truncate">
+                        {episode.showTitle}
+                      </h4>
                       <Badge variant="outline" className="text-xs">
                         S{episode.seasonNumber}E{episode.episodeNumber}
                       </Badge>
                     </div>
-                    
-                    <h3 className="font-semibold mb-1 truncate">{episode.episodeTitle}</h3>
+
+                    <h3 className="font-semibold mb-1 truncate">
+                      {episode.episodeTitle}
+                    </h3>
                     <p className="text-sm text-gray-600 line-clamp-2 mb-2">
                       {episode.episodeOverview}
                     </p>
-                    
+
                     <div className="flex items-center space-x-4 text-xs text-gray-500">
                       <span className="flex items-center">
                         <Clock className="h-3 w-3 mr-1" />
@@ -268,19 +290,21 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  
+
                   <Button size="sm">
                     <Play className="h-4 w-4 mr-2" />
                     Watch
                   </Button>
                 </div>
               ))}
-              
+
               {upNext.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   <Eye className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                   <p>No episodes up next!</p>
-                  <p className="text-sm">Start watching a show to see your next episodes here.</p>
+                  <p className="text-sm">
+                    Start watching a show to see your next episodes here.
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -324,11 +348,20 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3 text-sm">
+                <div
+                  key={activity.id}
+                  className="flex items-start space-x-3 text-sm"
+                >
                   <div className="p-1 bg-blue-100 rounded">
-                    {activity.type === "watch" && <Play className="h-3 w-3 text-blue-600" />}
-                    {activity.type === "complete" && <Star className="h-3 w-3 text-yellow-600" />}
-                    {activity.type === "add" && <Plus className="h-3 w-3 text-green-600" />}
+                    {activity.type === "watch" && (
+                      <Play className="h-3 w-3 text-blue-600" />
+                    )}
+                    {activity.type === "complete" && (
+                      <Star className="h-3 w-3 text-yellow-600" />
+                    )}
+                    {activity.type === "add" && (
+                      <Plus className="h-3 w-3 text-green-600" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <p className="font-medium">{activity.showTitle}</p>
@@ -336,17 +369,23 @@ export default function DashboardPage() {
                       <p className="text-gray-600">{activity.episodeTitle}</p>
                     )}
                     {activity.type === "complete" && (
-                      <p className="text-gray-600">Completed Season {activity.season}</p>
+                      <p className="text-gray-600">
+                        Completed Season {activity.season}
+                      </p>
                     )}
                     {activity.type === "add" && (
                       <p className="text-gray-600">Added to watchlist</p>
                     )}
-                    <p className="text-gray-400 text-xs">{activity.timestamp}</p>
+                    <p className="text-gray-400 text-xs">
+                      {activity.timestamp}
+                    </p>
                   </div>
                   {activity.rating && (
                     <div className="flex items-center">
                       <Star className="h-3 w-3 fill-current text-yellow-400" />
-                      <span className="ml-1 text-xs font-medium">{activity.rating}</span>
+                      <span className="ml-1 text-xs font-medium">
+                        {activity.rating}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -363,18 +402,22 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">This Month</span>
-                  <span className="font-medium">{stats.thisMonth.episodes} episodes</span>
+                  <span className="font-medium">
+                    {stats.thisMonth.episodes} episodes
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Time Watched</span>
-                  <span className="font-medium">{formatTime(stats.thisMonth.timeWatched)}</span>
+                  <span className="font-medium">
+                    {formatTime(stats.thisMonth.timeWatched)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Movies</span>
                   <span className="font-medium">{stats.thisMonth.movies}</span>
                 </div>
               </div>
-              
+
               <div className="pt-4 border-t">
                 <Link href="/stats">
                   <Button variant="outline" size="sm" className="w-full">
