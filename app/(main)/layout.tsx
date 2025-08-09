@@ -24,7 +24,7 @@ export default async function MainLayout({
     <KeyboardShortcutsProvider>
       <div className="min-h-screen bg-black">
         <Header />
-        <main className="pt-4 pb-20 md:pb-8 px-6 md:px-8">
+        <main className="pt-20 pb-20 md:pb-8 px-6 md:px-8">
           {children}
         </main>
         <MobileNav />

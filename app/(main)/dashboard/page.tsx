@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { createClient } from '@/lib/supabase/client';
-import { trackingService } from '@/lib/database/tracking';
-import { tmdbClient } from '@/lib/tmdb/client';
+import { useRouter } from "next/navigation";
+import { TMDBImage } from "@/components/ui/tmdb-image";
+import { createClient } from "@/lib/supabase/client";
+import { trackingService } from "@/lib/database/tracking";
+import { tmdbClient } from "@/lib/tmdb/client";
 import {
   Play,
   Clock,
@@ -31,21 +33,22 @@ import { ProgressRing } from "@/components/ui/progress-ring";
 import { FilmReel } from "@/components/ui/film-reel";
 import { cn } from "@/lib/utils";
 
-// Mock hero show data
-const mockHeroShow = {
-  id: 1,
+// Featured show data - will be dynamic based on user's continue watching
+const defaultHeroShow = {
+  id: 1399, // Breaking Bad TMDb ID (using a popular show with reliable images)
   title: "Breaking Bad",
-  overview: "Walter White, a struggling high school chemistry teacher, is diagnosed with inoperable lung cancer. He turns to a life of crime, producing and selling methamphetamine with his former student Jesse Pinkman.",
-  backdropPath: "/ggFHVNu6YYI5L9pCfOacjizRGt.jpg", // Using poster as backdrop for demo
+  overview:
+    "Walter White, a struggling high school chemistry teacher, is diagnosed with inoperable lung cancer. He turns to a life of crime, producing and selling methamphetamine with his former student Jesse Pinkman.",
+  backdropPath: "/tsRy63Mu5cu8etL1X7ZLyf7UP1M.jpg", // Valid Breaking Bad backdrop
   rating: 9.5,
   year: 2008,
   seasons: 5,
   episodes: 62,
-  watchedEpisodes: 47,
-  progress: 75,
-  genres: ["Drama", "Crime", "Thriller"],
+  watchedEpisodes: 0,
+  progress: 0,
+  genres: ["Drama", "Crime"],
   runtime: 47,
-  status: "watching" as const,
+  status: "planned" as const,
 };
 
 // Mock data
@@ -172,21 +175,31 @@ const mockStats = {
 };
 
 export default function DashboardPage() {
-  const [currentlyWatching, setCurrentlyWatching] = useState(mockCurrentlyWatching);
-  const [recentlyAdded, setRecentlyAdded] = useState(mockRecentlyAdded);
-  const [stats, setStats] = useState(mockStats);
+  const router = useRouter();
+  const [currentlyWatching, setCurrentlyWatching] = useState([]);
+  const [recentlyAdded, setRecentlyAdded] = useState([]);
+  const [heroShow, setHeroShow] = useState(defaultHeroShow);
+  const [stats, setStats] = useState({
+    thisWeek: { episodes: 0, movies: 0, timeWatched: 0 },
+    thisMonth: { episodes: 0, movies: 0, timeWatched: 0 },
+    allTime: { shows: 0, movies: 0, episodes: 0, timeWatched: 0 },
+    streak: 0,
+  });
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const supabase = createClient();
 
   useEffect(() => {
     const loadUserData = async () => {
       try {
         // Get authenticated user
-        const { data: { user }, error } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
         if (error || !user) {
-          console.log('No authenticated user');
+          console.log("No authenticated user");
           setIsLoading(false);
           return;
         }
@@ -196,52 +209,70 @@ export default function DashboardPage() {
         // Load user stats
         const userStats = await trackingService.getUserStats();
         setStats({
-          ...mockStats,
+          thisWeek: { episodes: 0, movies: 0, timeWatched: 0 }, // Could be enhanced to track weekly stats
+          thisMonth: { episodes: 0, movies: 0, timeWatched: 0 }, // Could be enhanced to track monthly stats
           allTime: {
             movies: userStats.moviesWatched,
-            shows: userStats.showsWatched, 
+            shows: userStats.showsWatched,
             episodes: userStats.episodesWatched,
             timeWatched: userStats.totalWatchTime,
-          }
+          },
+          streak: 0, // Could be enhanced to track streaks
         });
 
         // Load continue watching (user's in-progress shows)
         try {
           const watchlist = await trackingService.getUserWatchlist();
           if (watchlist.length > 0) {
-            // Filter for items that are being watched (not completed)
+            // Use the first few items from watchlist as continue watching
             const continueWatchingItems = watchlist.slice(0, 4);
+            setCurrentlyWatching(continueWatchingItems);
+            
+            // Set the first item as the hero show if it exists
             if (continueWatchingItems.length > 0) {
-              setCurrentlyWatching(continueWatchingItems.map(item => ({
-                ...item,
-                progress: Math.floor(Math.random() * 80) + 10, // Mock progress for now
-              })));
+              const firstItem = continueWatchingItems[0];
+              setHeroShow({
+                id: firstItem.id,
+                title: firstItem.title,
+                overview: firstItem.overview || defaultHeroShow.overview,
+                backdropPath: firstItem.posterPath || defaultHeroShow.backdropPath,
+                rating: (firstItem.rating || 0) / 10,
+                year: firstItem.year || defaultHeroShow.year,
+                seasons: 1, // Default for now
+                episodes: 1, // Default for now
+                watchedEpisodes: 0,
+                progress: firstItem.progress || 0,
+                genres: firstItem.genres || defaultHeroShow.genres,
+                runtime: defaultHeroShow.runtime,
+                status: "watching" as const,
+              });
             }
           }
         } catch (error) {
-          console.log('Error loading continue watching:', error);
+          console.log("Error loading continue watching:", error);
         }
 
         // Load trending content from TMDB
         try {
           const trending = await tmdbClient.getTrendingMovies();
           if (trending.results?.length > 0) {
-            setRecentlyAdded(trending.results.slice(0, 6).map(movie => ({
-              id: movie.id,
-              title: movie.title,
-              posterPath: movie.poster_path,
-              year: new Date(movie.release_date).getFullYear(),
-              type: 'movie' as const,
-              rating: movie.vote_average * 10,
-              genres: [], // Will be populated from movie details if needed
-            })));
+            setRecentlyAdded(
+              trending.results.slice(0, 6).map((movie) => ({
+                id: movie.id,
+                title: movie.title,
+                posterPath: movie.poster_path ?? "", // Ensure posterPath is always a string
+                year: new Date(movie.release_date).getFullYear(),
+                type: "movie" as const,
+                rating: movie.vote_average * 10,
+                genres: [], // Will be populated from movie details if needed
+              }))
+            );
           }
         } catch (error) {
-          console.log('Error loading trending content:', error);
+          console.log("Error loading trending content:", error);
         }
-
       } catch (error) {
-        console.error('Error loading dashboard data:', error);
+        console.error("Error loading dashboard data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -284,14 +315,15 @@ export default function DashboardPage() {
         >
           {/* Hero Background */}
           <div className="absolute inset-0">
-            <Image
-              src={`https://image.tmdb.org/t/p/original${mockHeroShow.backdropPath}`}
-              alt={mockHeroShow.title}
+            <TMDBImage
+              src={heroShow.backdropPath ? `https://image.tmdb.org/t/p/original${heroShow.backdropPath}` : null}
+              alt={heroShow.title}
               fill
               className="object-cover"
               priority
+              fallback={<div className="w-full h-full bg-gradient-to-br from-purple-900 via-black to-blue-900" />}
             />
-            
+
             {/* Multi-layer Gradients */}
             <div className="absolute inset-0 bg-hero-gradient" />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
@@ -320,7 +352,7 @@ export default function DashboardPage() {
 
               {/* Title */}
               <h1 className="text-6xl md:text-7xl font-bebas text-white mb-4 text-shadow-lg">
-                {mockHeroShow.title}
+                {heroShow.title}
               </h1>
 
               {/* Meta Info */}
@@ -328,15 +360,16 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                   <span className="text-white font-semibold">
-                    {mockHeroShow.rating.toFixed(1)}
+                    {heroShow.rating.toFixed(1)}
                   </span>
                 </div>
-                <span className="text-gray-300">{mockHeroShow.year}</span>
+                <span className="text-gray-300">{heroShow.year}</span>
                 <span className="text-gray-300">
-                  {mockHeroShow.seasons} Season{mockHeroShow.seasons > 1 ? 's' : ''}
+                  {heroShow.seasons} Season
+                  {heroShow.seasons > 1 ? "s" : ""}
                 </span>
                 <div className="flex gap-2">
-                  {mockHeroShow.genres.slice(0, 2).map((genre) => (
+                  {heroShow.genres.slice(0, 2).map((genre) => (
                     <Badge
                       key={genre}
                       variant="outline"
@@ -350,24 +383,25 @@ export default function DashboardPage() {
 
               {/* Overview */}
               <p className="text-gray-200 text-lg mb-8 max-w-xl leading-relaxed">
-                {mockHeroShow.overview}
+                {heroShow.overview}
               </p>
 
               {/* Progress */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-300 text-sm">
-                    Episode {mockHeroShow.watchedEpisodes} of {mockHeroShow.episodes}
+                    Episode {heroShow.watchedEpisodes} of{" "}
+                    {heroShow.episodes}
                   </span>
                   <span className="text-gray-300 text-sm">
-                    {mockHeroShow.progress}% Complete
+                    {heroShow.progress}% Complete
                   </span>
                 </div>
                 <div className="w-full bg-black/50 h-2">
                   <motion.div
                     className="h-full progress-neon"
                     initial={{ width: 0 }}
-                    animate={{ width: `${mockHeroShow.progress}%` }}
+                    animate={{ width: `${heroShow.progress}%` }}
                     transition={{ delay: 1, duration: 1.5 }}
                   />
                 </div>
@@ -379,12 +413,18 @@ export default function DashboardPage() {
                   variant="primary"
                   size="lg"
                   className="px-8 py-4"
+                  onClick={() => router.push(`/shows/${heroShow.id}`)}
                 >
                   <Play className="w-5 h-5 mr-3 fill-current" />
                   Continue Watching
                 </GlowingButton>
-                
-                <GlowingButton variant="ghost" size="lg" className="px-8 py-4">
+
+                <GlowingButton
+                  variant="ghost"
+                  size="lg"
+                  className="px-8 py-4"
+                  onClick={() => router.push(`/shows/${heroShow.id}`)}
+                >
                   <Info className="w-5 h-5 mr-3" />
                   More Info
                 </GlowingButton>
@@ -400,7 +440,7 @@ export default function DashboardPage() {
             transition={{ delay: 0.8, type: "spring", stiffness: 100 }}
           >
             <ProgressRing
-              progress={mockHeroShow.progress}
+              progress={heroShow.progress}
               size={120}
               strokeWidth={6}
               color="primary"
@@ -455,20 +495,28 @@ export default function DashboardPage() {
                   <Card className="bg-background-card/80 backdrop-blur-sm border-border hover:bg-background-card/90 transition-all duration-300 group">
                     <CardContent className="p-6">
                       <div className="flex items-center space-x-4">
-                        <div className={cn(
-                          "p-3 rounded-full bg-gradient-to-br",
-                          stat.color === "purple" && "from-purple-500/20 to-purple-600/20",
-                          stat.color === "emerald" && "from-emerald-500/20 to-emerald-600/20",
-                          stat.color === "amber" && "from-amber-500/20 to-amber-600/20",
-                          stat.color === "blue" && "from-blue-500/20 to-blue-600/20"
-                        )}>
-                          <stat.icon className={cn(
-                            "w-6 h-6",
-                            stat.color === "purple" && "text-purple-400",
-                            stat.color === "emerald" && "text-emerald-400",
-                            stat.color === "amber" && "text-amber-400",
-                            stat.color === "blue" && "text-blue-400"
-                          )} />
+                        <div
+                          className={cn(
+                            "p-3 rounded-full bg-gradient-to-br",
+                            stat.color === "purple" &&
+                              "from-purple-500/20 to-purple-600/20",
+                            stat.color === "emerald" &&
+                              "from-emerald-500/20 to-emerald-600/20",
+                            stat.color === "amber" &&
+                              "from-amber-500/20 to-amber-600/20",
+                            stat.color === "blue" &&
+                              "from-blue-500/20 to-blue-600/20"
+                          )}
+                        >
+                          <stat.icon
+                            className={cn(
+                              "w-6 h-6",
+                              stat.color === "purple" && "text-purple-400",
+                              stat.color === "emerald" && "text-emerald-400",
+                              stat.color === "amber" && "text-amber-400",
+                              stat.color === "blue" && "text-blue-400"
+                            )}
+                          />
                         </div>
                         <div>
                           <p className="text-foreground-muted text-sm">
@@ -509,7 +557,9 @@ export default function DashboardPage() {
             transition={{ delay: 0.6, duration: 0.8 }}
           >
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bebas text-white">Continue Watching</h2>
+              <h2 className="text-3xl font-bebas text-white">
+                Continue Watching
+              </h2>
               <Link href="/shows">
                 <GlowingButton variant="ghost" size="sm">
                   View All
@@ -578,33 +628,54 @@ export default function DashboardPage() {
             transition={{ delay: 1, duration: 0.8 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            <Card className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border-purple-500/30 hover:from-purple-600/30 hover:to-purple-800/30 transition-all duration-300 group cursor-pointer">
+            <Card 
+              className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border-purple-500/30 hover:from-purple-600/30 hover:to-purple-800/30 transition-all duration-300 group cursor-pointer"
+              onClick={() => router.push('/movies')}
+            >
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <Eye className="w-8 h-8 text-purple-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Discover New</h3>
-                <p className="text-gray-400 text-sm">Find your next favorite show or movie</p>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Discover New
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  Find your next favorite show or movie
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-amber-600/20 to-amber-800/20 border-amber-500/30 hover:from-amber-600/30 hover:to-amber-800/30 transition-all duration-300 group cursor-pointer">
+            <Card 
+              className="bg-gradient-to-br from-amber-600/20 to-amber-800/20 border-amber-500/30 hover:from-amber-600/30 hover:to-amber-800/30 transition-all duration-300 group cursor-pointer"
+              onClick={() => router.push('/stats')}
+            >
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <TrendingUp className="w-8 h-8 text-amber-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">View Stats</h3>
-                <p className="text-gray-400 text-sm">See your watching patterns and achievements</p>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  View Stats
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  See your watching patterns and achievements
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-emerald-600/20 to-emerald-800/20 border-emerald-500/30 hover:from-emerald-600/30 hover:to-emerald-800/30 transition-all duration-300 group cursor-pointer">
+            <Card 
+              className="bg-gradient-to-br from-emerald-600/20 to-emerald-800/20 border-emerald-500/30 hover:from-emerald-600/30 hover:to-emerald-800/30 transition-all duration-300 group cursor-pointer"
+              onClick={() => router.push('/watchlist')}
+            >
               <CardContent className="p-8 text-center">
                 <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
                   <Plus className="w-8 h-8 text-emerald-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Add Content</h3>
-                <p className="text-gray-400 text-sm">Build your personal watchlist</p>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Add Content
+                </h3>
+                <p className="text-gray-400 text-sm">
+                  Build your personal watchlist
+                </p>
               </CardContent>
             </Card>
           </motion.section>

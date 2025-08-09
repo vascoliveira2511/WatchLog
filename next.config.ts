@@ -22,7 +22,35 @@ const nextConfig: NextConfig = {
         pathname: '/**'
       }
     ]
-  }
+  },
+  webpack: (config, { isServer }) => {
+    // Handle Supabase realtime websocket warnings
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
+        path: false,
+      };
+    }
+    
+    // Suppress specific warnings for Supabase realtime
+    config.ignoreWarnings = [
+      { module: /node_modules\/@supabase\/realtime-js/ },
+      { file: /node_modules\/@supabase\/realtime-js/ },
+    ];
+
+    return config;
+  },
 }
 
 export default nextConfig

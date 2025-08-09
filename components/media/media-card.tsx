@@ -2,12 +2,14 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, Plus, Check, Play, Clock, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { GlowingButton } from "@/components/ui/glowing-button";
 import { cn } from "@/lib/utils";
+import { addToWatchlistClient, removeFromWatchlistClient, markAsWatchedClient, unmarkAsWatchedClient } from "@/lib/database/client-operations";
+import { useRouter } from "next/navigation";
 
 interface MediaCardProps {
   id: number;
@@ -50,22 +52,67 @@ export function MediaCard({
   onClick,
   className,
 }: MediaCardProps) {
+  const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
-  const [currentRating, setCurrentRating] = useState((rating || 0) / 2); // Convert to 5-star scale
+  const [currentRating, setCurrentRating] = useState((rating || 0) / 20); // Convert TMDB rating to 5-star scale  
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [localIsWatched, setLocalIsWatched] = useState(isWatched);
+  const [localIsInWatchlist, setLocalIsInWatchlist] = useState(isInWatchlist);
 
   const posterUrl = posterPath 
     ? `https://image.tmdb.org/t/p/w500${posterPath}`
     : null;
 
-  const handleWatchedClick = (e: React.MouseEvent) => {
+  // Update local state when props change
+  useEffect(() => {
+    setLocalIsWatched(isWatched);
+    setLocalIsInWatchlist(isInWatchlist);
+  }, [isWatched, isInWatchlist]);
+
+  const handleWatchedClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
-    onWatchedToggle?.(id, !isWatched);
+    
+    const newWatchedState = !localIsWatched;
+    setLocalIsWatched(newWatchedState);
+    
+    let success: boolean;
+    if (newWatchedState) {
+      success = await markAsWatchedClient(type, id);
+    } else {
+      success = await unmarkAsWatchedClient(type, id);
+    }
+    
+    if (!success) {
+      // Revert on failure
+      setLocalIsWatched(!newWatchedState);
+    } else {
+      // Call the optional callback
+      onWatchedToggle?.(id, newWatchedState);
+    }
   };
 
-  const handleWatchlistClick = (e: React.MouseEvent) => {
+  const handleWatchlistClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
-    onWatchlistToggle?.(id, !isInWatchlist);
+    
+    const newWatchlistState = !localIsInWatchlist;
+    setLocalIsInWatchlist(newWatchlistState);
+    
+    let success: boolean;
+    if (newWatchlistState) {
+      success = await addToWatchlistClient(type, id);
+    } else {
+      success = await removeFromWatchlistClient(type, id);
+    }
+    
+    if (!success) {
+      // Revert on failure
+      setLocalIsInWatchlist(!newWatchlistState);
+    } else {
+      // Call the optional callback
+      onWatchlistToggle?.(id, newWatchlistState);
+    }
   };
 
   const handleRatingClick = (e: React.MouseEvent, newRating: number) => {
@@ -76,6 +123,13 @@ export function MediaCard({
 
   const handleCardClick = () => {
     onClick?.(id);
+  };
+
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Navigate to the media detail page
+    router.push(`/${type}s/${id}`);
   };
 
   return (
@@ -124,6 +178,7 @@ export function MediaCard({
               )}
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
               onLoadingComplete={() => setImageLoaded(true)}
+              onError={() => setImageLoaded(true)} // Show fallback even on error
               priority={false}
             />
           </>
@@ -156,7 +211,7 @@ export function MediaCard({
 
         {/* Status Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2 z-20">
-          {isWatched && (
+          {localIsWatched && (
             <motion.div
               className="bg-success/90 backdrop-blur-sm px-2 py-1 flex items-center gap-1"
               initial={{ opacity: 0, x: -20 }}
@@ -170,7 +225,7 @@ export function MediaCard({
             </motion.div>
           )}
           
-          {isInWatchlist && (
+          {localIsInWatchlist && (
             <motion.div
               className="bg-purple-600/90 backdrop-blur-sm px-2 py-1 flex items-center gap-1"
               initial={{ opacity: 0, x: -20 }}
@@ -184,7 +239,7 @@ export function MediaCard({
         </div>
 
         {/* Rating Badge */}
-        {currentRating > 0 && (
+        {rating && rating > 0 && (
           <motion.div
             className="absolute top-3 right-3 bg-black/80 backdrop-blur-sm px-2 py-1 flex items-center gap-1"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -193,7 +248,7 @@ export function MediaCard({
           >
             <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
             <span className="text-xs font-semibold text-white">
-              {currentRating.toFixed(1)}
+              {Math.round(rating)}%
             </span>
           </motion.div>
         )}
@@ -236,10 +291,7 @@ export function MediaCard({
                 variant="primary"
                 size="sm"
                 className="px-4 py-2 text-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Handle play action
-                }}
+                onClick={handlePlayClick}
               >
                 <Play className="w-4 h-4 mr-2 fill-current" />
                 Play
@@ -251,12 +303,12 @@ export function MediaCard({
               whileTap={{ scale: 0.9 }}
             >
               <GlowingButton
-                variant={isWatched ? "accent" : "ghost"}
+                variant={localIsWatched ? "accent" : "ghost"}
                 size="sm"
                 className="p-2"
                 onClick={handleWatchedClick}
               >
-                {isWatched ? (
+                {localIsWatched ? (
                   <Check className="w-4 h-4" />
                 ) : (
                   <Clock className="w-4 h-4" />
@@ -269,14 +321,14 @@ export function MediaCard({
               whileTap={{ scale: 0.9 }}
             >
               <GlowingButton
-                variant={isInWatchlist ? "accent" : "ghost"}
+                variant={localIsInWatchlist ? "accent" : "ghost"}
                 size="sm"
                 className="p-2"
                 onClick={handleWatchlistClick}
               >
                 <Plus className={cn(
                   "w-4 h-4 transition-transform duration-200",
-                  isInWatchlist && "rotate-45"
+                  localIsInWatchlist && "rotate-45"
                 )} />
               </GlowingButton>
             </motion.div>

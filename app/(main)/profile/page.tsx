@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { createClient } from '@/lib/supabase/client';
 import { trackingService } from '@/lib/database/tracking';
+import { clearAllUserDataClient } from '@/lib/database/client-operations';
+import { useRouter } from 'next/navigation';
 import { 
   User, 
   Settings, 
@@ -21,7 +23,9 @@ import {
   Mail,
   Globe,
   Play,
-  Eye
+  Eye,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,12 +79,14 @@ const mockWatchlist = [
 ];
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [user, setUser] = useState(mockUser);
   const [stats, setStats] = useState(mockStats);
   const [recentActivity, setRecentActivity] = useState(mockRecentActivity);
   const [watchlist, setWatchlist] = useState(mockWatchlist);
   const [selectedTab, setSelectedTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
+  const [isClearingData, setIsClearingData] = useState(false);
 
   const supabase = createClient();
 
@@ -137,6 +143,33 @@ export default function ProfilePage() {
 
     loadUserData();
   }, []);
+
+  const handleClearAllData = async () => {
+    if (!confirm('⚠️ Are you sure you want to clear ALL your watch history, watchlist, and progress data? This action cannot be undone!')) {
+      return;
+    }
+
+    setIsClearingData(true);
+    const success = await clearAllUserDataClient();
+    
+    if (success) {
+      // Refresh the page to show updated state
+      router.refresh();
+      // Reset local state
+      setWatchlist([]);
+      setRecentActivity([]);
+      setStats({
+        ...stats,
+        totalWatched: 0,
+        watchlistCount: 0,
+        moviesWatched: 0,
+        showsWatched: 0,
+        totalHours: 0
+      });
+    }
+    
+    setIsClearingData(false);
+  };
 
   const formatJoinDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -278,7 +311,7 @@ export default function ProfilePage() {
           transition={{ delay: 0.2, duration: 0.6 }}
         >
           <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-8">
-            <TabsList className="glass-premium border-white/10 bg-black/40 grid w-full grid-cols-4">
+            <TabsList className="glass-premium border-white/10 bg-black/40 grid w-full grid-cols-5">
               <TabsTrigger value="overview" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
                 Overview
               </TabsTrigger>
@@ -290,6 +323,9 @@ export default function ProfilePage() {
               </TabsTrigger>
               <TabsTrigger value="stats" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
                 Statistics
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+                Settings
               </TabsTrigger>
             </TabsList>
 
@@ -510,6 +546,76 @@ export default function ProfilePage() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="settings" className="space-y-6">
+              <Card className="glass-premium border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-purple-400" />
+                    Account Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Data Management Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white">Data Management</h3>
+                    <div className="p-4 border border-red-500/30 bg-red-500/10 rounded-lg">
+                      <div className="flex items-start gap-4">
+                        <AlertTriangle className="h-6 w-6 text-red-400 mt-0.5 flex-shrink-0" />
+                        <div className="space-y-3 flex-1">
+                          <div>
+                            <h4 className="font-semibold text-white mb-2">Clear All Data</h4>
+                            <p className="text-gray-300 text-sm">
+                              This will permanently delete all of your watch history, watchlist items, ratings, and progress data. 
+                              This action cannot be undone.
+                            </p>
+                          </div>
+                          <GlowingButton 
+                            variant="ghost" 
+                            size="sm"
+                            className="border-red-500/50 text-red-400 hover:bg-red-500/20"
+                            onClick={handleClearAllData}
+                            disabled={isClearingData}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            {isClearingData ? "Clearing..." : "Clear All Data"}
+                          </GlowingButton>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Account Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white">Account Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm text-gray-400">Email</label>
+                        <p className="text-white">{user.email}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm text-gray-400">Member Since</label>
+                        <p className="text-white">{formatJoinDate(user.joinedAt)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Privacy Settings */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white">Privacy</h3>
+                    <div className="flex items-center justify-between p-4 border border-white/10 rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-white">Private Profile</h4>
+                        <p className="text-sm text-gray-400">Make your profile and activity private</p>
+                      </div>
+                      <div className="text-gray-400">
+                        {user.isPrivate ? "Enabled" : "Disabled"}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </motion.div>
