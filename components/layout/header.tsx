@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, 
@@ -40,11 +41,22 @@ const navigation = [
 ];
 
 export function Header() {
+  const router = useRouter();
+  const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [hasNotifications, setHasNotifications] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
 
   return (
     <motion.header
@@ -312,19 +324,28 @@ export function Header() {
                   <Sparkles className="w-4 h-4 text-amber-400 ml-auto" />
                 </div>
 
-                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">
+                <DropdownMenuItem 
+                  className="text-gray-300 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white cursor-pointer"
+                  onClick={() => router.push('/profile')}
+                >
                   <User className="mr-3 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
                 
-                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white">
+                <DropdownMenuItem 
+                  className="text-gray-300 hover:text-white hover:bg-white/10 focus:bg-white/10 focus:text-white cursor-pointer"
+                  onClick={() => router.push('/settings')}
+                >
                   <Settings className="mr-3 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
                 
                 <DropdownMenuSeparator className="bg-white/10" />
                 
-                <DropdownMenuItem className="text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-300">
+                <DropdownMenuItem 
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-300 cursor-pointer"
+                  onClick={handleLogout}
+                >
                   <LogOut className="mr-3 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>

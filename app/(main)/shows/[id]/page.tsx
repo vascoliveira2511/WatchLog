@@ -1,8 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import { tmdbClient, TMDBTVShow } from "@/lib/tmdb/client";
+import { trackingService } from "@/lib/database/tracking";
+import { CinematicBackground } from "@/components/ui/cinematic-background";
+import { WatchButton, WatchStatus } from "@/components/ui/watch-button";
+import { RatingStars } from "@/components/ui/rating-stars";
 import { 
   Star, 
   Calendar, 
