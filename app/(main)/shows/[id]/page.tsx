@@ -85,17 +85,100 @@ const mockSeasons = [
 
 export default function ShowDetailsPage() {
   const params = useParams();
-  const showId = params.id as string;
+  const showId = parseInt(params.id as string);
   
   const [show, setShow] = useState(mockShow);
   const [seasons, setSeasons] = useState(mockSeasons);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [activeTab, setActiveTab] = useState("episodes");
+  const [isLoading, setIsLoading] = useState(true);
+  const [realShow, setRealShow] = useState(null);
+
+  useEffect(() => {
+    const loadShowData = async () => {
+      try {
+        // Load show details from TMDB
+        const showData = await tmdbClient.getTVShow(showId);
+        setRealShow(showData);
+        
+        // Load user tracking data
+        try {
+          const userData = await trackingService.getShowUserData(showId);
+          console.log('User show data:', userData);
+          
+          // Update show with real data
+          setShow({
+            ...mockShow,
+            id: showData.id,
+            title: showData.name,
+            year: new Date(showData.first_air_date).getFullYear(),
+            overview: showData.overview,
+            rating: showData.vote_average,
+            seasons: showData.number_of_seasons,
+            totalEpisodes: showData.number_of_episodes,
+            watchedEpisodes: userData.totalWatched,
+            status: userData.watchStatus === 'watching' ? 'watching' : 
+                   userData.watchStatus === 'watched' ? 'completed' : 'unwatched',
+            isInWatchlist: userData.inWatchlist,
+          });
+        } catch (error) {
+          console.log('User not authenticated or tracking data unavailable');
+          // Use TMDB data only
+          setShow({
+            ...mockShow,
+            id: showData.id,
+            title: showData.name,
+            year: new Date(showData.first_air_date).getFullYear(),
+            overview: showData.overview,
+            rating: showData.vote_average,
+            seasons: showData.number_of_seasons,
+            totalEpisodes: showData.number_of_episodes,
+          });
+        }
+
+        // Load season data
+        if (showData.seasons && showData.seasons.length > 0) {
+          try {
+            const seasonData = await tmdbClient.getTVSeason(showId, selectedSeason);
+            if (seasonData.episodes) {
+              const episodesWithProgress = seasonData.episodes.map(episode => ({
+                id: episode.id,
+                episodeNumber: episode.episode_number,
+                title: episode.name,
+                airDate: episode.air_date,
+                runtime: episode.runtime,
+                overview: episode.overview,
+                watched: false, // Will be loaded from database
+                rating: null,
+              }));
+              
+              setSeasons([{
+                seasonNumber: selectedSeason,
+                episodes: episodesWithProgress,
+              }]);
+            }
+          } catch (error) {
+            console.error('Error loading season data:', error);
+          }
+        }
+        
+      } catch (error) {
+        console.error('Error loading show:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (showId) {
+      loadShowData();
+    }
+  }, [showId, selectedSeason]);
 
   const progressPercentage = (show.watchedEpisodes / show.totalEpisodes) * 100;
   const selectedSeasonData = seasons.find(s => s.seasonNumber === selectedSeason);
 
-  const handleEpisodeWatched = (episodeId: number, watched: boolean) => {
+  const handleEpisodeWatched = async (episodeId: number, watched: boolean) => {
+    // Optimistic UI update
     setSeasons(prev => prev.map(season => ({
       ...season,
       episodes: season.episodes.map(episode =>
@@ -113,6 +196,21 @@ export default function ShowDetailsPage() {
       watchedEpisodes: newWatchedCount,
       status: newWatchedCount === show.totalEpisodes ? "completed" as const : "watching" as const
     }));
+
+    try {
+      // Save to database
+      // Note: This would need a new trackingService method for episodes
+      console.log(`Marking episode ${episodeId} as ${watched ? 'watched' : 'unwatched'}`);
+      
+      // Update show status in database
+      const newStatus = newWatchedCount === show.totalEpisodes ? 'watched' : 
+                       newWatchedCount > 0 ? 'watching' : 'unwatched';
+      await trackingService.updateShowStatus(showId, newStatus as any, realShow);
+      
+    } catch (error) {
+      console.error('Error updating episode status:', error);
+      // Could revert the optimistic update here
+    }
   };
 
   const handleBulkMarkWatched = (episodeIds: number[]) => {

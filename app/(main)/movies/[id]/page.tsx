@@ -68,13 +68,17 @@ export default function MovieDetailsPage() {
   }, [movieId]);
 
   const handleRatingChange = async (rating: number) => {
+    const previousRating = userRating;
     setUserRating(rating);
     try {
       await trackingService.rateMovie(movieId, rating);
+      console.log('Rating saved successfully');
     } catch (error) {
       console.error('Error saving rating:', error);
       // Revert on error
-      setUserRating(userRating);
+      setUserRating(previousRating);
+      // Show error message to user
+      alert('Failed to save rating. Please try again.');
     }
   };
 
@@ -83,10 +87,19 @@ export default function MovieDetailsPage() {
     setWatchStatus(status);
     try {
       await trackingService.updateMovieStatus(movieId, status, movie);
+      console.log('Watch status updated successfully');
+      
+      // If marking as watched, show success message
+      if (status === 'watched') {
+        // Could add a toast notification here
+        console.log(`Marked "${movie?.title}" as watched!`);
+      }
     } catch (error) {
       console.error('Error updating watch status:', error);
       // Revert on error
       setWatchStatus(previousStatus);
+      // Show error message to user
+      alert('Failed to update watch status. Please try again.');
     }
   };
 

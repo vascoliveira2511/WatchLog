@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { createClient } from '@/lib/supabase/client';
+import { trackingService } from '@/lib/database/tracking';
 import { 
   User, 
   Settings, 
@@ -80,15 +82,52 @@ export default function ProfilePage() {
   const [selectedTab, setSelectedTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
 
+  const supabase = createClient();
+
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        // TODO: Load real user data from Supabase
-        // const userData = await getUserProfile();
-        // const userStats = await getUserStats();
-        // const activity = await getUserActivity();
-        // const userWatchlist = await getUserWatchlist();
-        
+        // Load authenticated user
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+        if (error || !authUser) {
+          console.log('No authenticated user');
+          setIsLoading(false);
+          return;
+        }
+
+        // Update user info
+        setUser({
+          ...mockUser,
+          id: authUser.id,
+          email: authUser.email || mockUser.email,
+          name: authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || mockUser.name,
+          username: authUser.user_metadata?.username || authUser.email?.split('@')[0] || mockUser.username,
+        });
+
+        // Load user stats
+        const userStats = await trackingService.getUserStats();
+        setStats({
+          ...mockStats,
+          totalWatched: userStats.moviesWatched + userStats.showsWatched,
+          moviesWatched: userStats.moviesWatched,
+          showsWatched: userStats.showsWatched,
+          totalHours: Math.floor(userStats.totalWatchTime / 60),
+        });
+
+        // Load user watchlist
+        const userWatchlist = await trackingService.getUserWatchlist();
+        if (userWatchlist.length > 0) {
+          setWatchlist(userWatchlist.slice(0, 4).map(item => ({
+            id: item.media_id,
+            title: `Media ${item.media_id}`, // Will be populated from TMDB
+            type: item.media_type === 'movie' ? 'movie' : 'tv',
+            posterPath: null, // Will be populated from TMDB
+            year: 2023, // Will be populated from TMDB
+            rating: 8.0, // Mock rating
+          })));
+        }
+
+        console.log('Loaded profile data:', { authUser, userStats, userWatchlist });
         setIsLoading(false);
       } catch (error) {
         console.error('Error loading profile data:', error);

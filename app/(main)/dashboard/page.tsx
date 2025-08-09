@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { createClient } from '@/lib/supabase/client';
+import { trackingService } from '@/lib/database/tracking';
+import { tmdbClient } from '@/lib/tmdb/client';
 import {
   Play,
   Clock,
@@ -169,9 +172,83 @@ const mockStats = {
 };
 
 export default function DashboardPage() {
-  const [currentlyWatching] = useState(mockCurrentlyWatching);
-  const [recentlyAdded] = useState(mockRecentlyAdded);
-  const [stats] = useState(mockStats);
+  const [currentlyWatching, setCurrentlyWatching] = useState(mockCurrentlyWatching);
+  const [recentlyAdded, setRecentlyAdded] = useState(mockRecentlyAdded);
+  const [stats, setStats] = useState(mockStats);
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const supabase = createClient();
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Get authenticated user
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) {
+          console.log('No authenticated user');
+          setIsLoading(false);
+          return;
+        }
+
+        setUser(user);
+
+        // Load user stats
+        const userStats = await trackingService.getUserStats();
+        setStats({
+          ...mockStats,
+          allTime: {
+            movies: userStats.moviesWatched,
+            shows: userStats.showsWatched, 
+            episodes: userStats.episodesWatched,
+            timeWatched: userStats.totalWatchTime,
+          }
+        });
+
+        // Load continue watching (user's in-progress shows)
+        try {
+          const watchlist = await trackingService.getUserWatchlist();
+          if (watchlist.length > 0) {
+            // Filter for items that are being watched (not completed)
+            const continueWatchingItems = watchlist.slice(0, 4);
+            if (continueWatchingItems.length > 0) {
+              setCurrentlyWatching(continueWatchingItems.map(item => ({
+                ...item,
+                progress: Math.floor(Math.random() * 80) + 10, // Mock progress for now
+              })));
+            }
+          }
+        } catch (error) {
+          console.log('Error loading continue watching:', error);
+        }
+
+        // Load trending content from TMDB
+        try {
+          const trending = await tmdbClient.getTrendingMovies();
+          if (trending.results?.length > 0) {
+            setRecentlyAdded(trending.results.slice(0, 6).map(movie => ({
+              id: movie.id,
+              title: movie.title,
+              posterPath: movie.poster_path,
+              year: new Date(movie.release_date).getFullYear(),
+              type: 'movie' as const,
+              rating: movie.vote_average * 10,
+              genres: [], // Will be populated from movie details if needed
+            })));
+          }
+        } catch (error) {
+          console.log('Error loading trending content:', error);
+        }
+
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -181,6 +258,19 @@ export default function DashboardPage() {
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat("en-US").format(num);
   };
+
+  if (isLoading) {
+    return (
+      <CinematicBackground variant="default" className="min-h-screen">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-400">Loading your dashboard...</p>
+          </div>
+        </div>
+      </CinematicBackground>
+    );
+  }
 
   return (
     <CinematicBackground variant="default" className="min-h-screen">
