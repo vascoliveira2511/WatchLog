@@ -87,6 +87,24 @@ export class TMDBClient {
     });
   }
 
+  async getTopRatedMovies(page = 1): Promise<TMDBMovieSearchResponse> {
+    return this.request('/movie/top_rated', {
+      page: page.toString(),
+    });
+  }
+
+  async getUpcomingMovies(page = 1): Promise<TMDBMovieSearchResponse> {
+    return this.request('/movie/upcoming', {
+      page: page.toString(),
+    });
+  }
+
+  async getNowPlayingMovies(page = 1): Promise<TMDBMovieSearchResponse> {
+    return this.request('/movie/now_playing', {
+      page: page.toString(),
+    });
+  }
+
   // TV Shows
   async getTVShow(id: number): Promise<TMDBTVShow> {
     return this.request(`/tv/${id}`, {
@@ -112,6 +130,24 @@ export class TMDBClient {
 
   async getPopularTVShows(page = 1): Promise<TMDBTVSearchResponse> {
     return this.request('/tv/popular', {
+      page: page.toString(),
+    });
+  }
+
+  async getAiringTodayTVShows(page = 1): Promise<TMDBTVSearchResponse> {
+    return this.request('/tv/airing_today', {
+      page: page.toString(),
+    });
+  }
+
+  async getOnTheAirTVShows(page = 1): Promise<TMDBTVSearchResponse> {
+    return this.request('/tv/on_the_air', {
+      page: page.toString(),
+    });
+  }
+
+  async getTopRatedTVShows(page = 1): Promise<TMDBTVSearchResponse> {
+    return this.request('/tv/top_rated', {
       page: page.toString(),
     });
   }

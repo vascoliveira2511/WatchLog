@@ -2,8 +2,23 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Bell, User, Settings, LogOut, Film, Sparkles } from "lucide-react";
+import { 
+  Search, 
+  Bell, 
+  User, 
+  Settings, 
+  LogOut, 
+  Film, 
+  Sparkles,
+  LayoutDashboard,
+  Tv,
+  Heart,
+  BarChart3,
+  Menu,
+  X
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GlowingButton } from "@/components/ui/glowing-button";
@@ -16,10 +31,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
+const navigation = [
+  { name: "Home", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Movies", href: "/movies", icon: Film },
+  { name: "Shows", href: "/shows", icon: Tv },
+  { name: "Watchlist", href: "/watchlist", icon: Heart },
+  { name: "Stats", href: "/stats", icon: BarChart3 },
+];
+
 export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [hasNotifications, setHasNotifications] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <motion.header
@@ -46,7 +71,7 @@ export function Header() {
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
           >
-            <Link href="/dashboard" className="group flex items-center space-x-2">
+            <Link href="/dashboard" className="group flex items-center space-x-2 relative">
               {/* Film Reel Icon */}
               <motion.div
                 className="relative p-2"
@@ -83,6 +108,56 @@ export function Header() {
                 transition={{ duration: 0.3 }}
               />
             </Link>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center space-x-1">
+              {navigation.map((item, index) => {
+                const isActive = pathname === item.href;
+                return (
+                  <motion.div
+                    key={item.name}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 + index * 0.1 }}
+                  >
+                    <Link href={item.href}>
+                      <motion.div
+                        className={cn(
+                          "relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300",
+                          isActive 
+                            ? "text-white bg-white/10" 
+                            : "text-gray-300 hover:text-white hover:bg-white/5"
+                        )}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {isActive && (
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-amber-500/20 rounded-lg border border-purple-500/30"
+                            layoutId="activeNavItem"
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          />
+                        )}
+                        <item.icon className="w-4 h-4 relative z-10" />
+                        <span className="relative z-10">{item.name}</span>
+                      </motion.div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </nav>
+
+            {/* Mobile Menu Button */}
+            <motion.button
+              className="lg:hidden p-2 text-gray-400 hover:text-white"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </motion.button>
           </motion.div>
 
           {/* Search Section */}
@@ -265,6 +340,47 @@ export function Header() {
         animate={{ opacity: [0.5, 1, 0.5] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
       />
+
+      {/* Mobile Menu Dropdown */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            className="absolute top-full left-0 right-0 lg:hidden z-40 bg-black/95 backdrop-blur-xl border-b border-white/10"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <nav className="px-6 py-4 space-y-2">
+              {navigation.map((item, index) => {
+                const isActive = pathname === item.href;
+                return (
+                  <motion.div
+                    key={item.name}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Link 
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg transition-all duration-300",
+                        isActive 
+                          ? "text-white bg-purple-500/20 border border-purple-500/30" 
+                          : "text-gray-300 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="font-medium">{item.name}</span>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.header>
   );
 }

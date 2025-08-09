@@ -14,11 +14,9 @@ import {
   List,
   X,
   ChevronDown,
-  Tv,
-  Play,
   Flame
 } from "lucide-react";
-import { tmdbClient, TMDBTVShow, TMDBGenre } from "@/lib/tmdb/client";
+import { tmdbClient, TMDBMovie, TMDBGenre } from "@/lib/tmdb/client";
 import { CinematicBackground } from "@/components/ui/cinematic-background";
 import { GlowingButton } from "@/components/ui/glowing-button";
 import { MediaCard } from "@/components/media/media-card";
@@ -28,9 +26,10 @@ import { cn } from "@/lib/utils";
 
 const SORT_OPTIONS = [
   { value: "popularity.desc", label: "Most Popular" },
-  { value: "first_air_date.desc", label: "Latest Episodes" },
+  { value: "release_date.desc", label: "Latest Release" },
   { value: "vote_average.desc", label: "Highest Rated" },
-  { value: "name.asc", label: "A-Z" },
+  { value: "revenue.desc", label: "Highest Grossing" },
+  { value: "title.asc", label: "A-Z" },
 ];
 
 const YEAR_RANGES = [
@@ -50,11 +49,10 @@ interface FilterState {
   sortBy: string;
 }
 
-export default function ShowsPage() {
-  const [shows, setShows] = useState<TMDBTVShow[]>([]);
+export default function MoviesPage() {
+  const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [genres, setGenres] = useState<TMDBGenre[]>([]);
-  const [trendingShows, setTrendingShows] = useState<TMDBTVShow[]>([]);
-  const [airingToday, setAiringToday] = useState<TMDBTVShow[]>([]);
+  const [trendingMovies, setTrendingMovies] = useState<TMDBMovie[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
@@ -74,17 +72,15 @@ export default function ShowsPage() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [showsResponse, genresResponse, trendingResponse, airingTodayResponse] = await Promise.all([
-          tmdbClient.getPopularTVShows(1),
-          tmdbClient.getTVGenres(),
-          tmdbClient.getTrendingTVShows('week'),
-          tmdbClient.getAiringTodayTVShows(1)
+        const [moviesResponse, genresResponse, trendingResponse] = await Promise.all([
+          tmdbClient.getPopularMovies(1),
+          tmdbClient.getMovieGenres(),
+          tmdbClient.getTrendingMovies('week')
         ]);
 
-        setShows(showsResponse.results);
+        setMovies(moviesResponse.results);
         setGenres(genresResponse.genres);
-        setTrendingShows(trendingResponse.results.slice(0, 6));
-        setAiringToday(airingTodayResponse.results.slice(0, 8));
+        setTrendingMovies(trendingResponse.results.slice(0, 6));
         setIsLoading(false);
       } catch (error) {
         console.error('Error loading initial data:', error);
@@ -101,17 +97,17 @@ export default function ShowsPage() {
       if (searchQuery.trim()) {
         setIsSearching(true);
         try {
-          const response = await tmdbClient.searchTVShows(searchQuery, 1);
-          setShows(response.results);
+          const response = await tmdbClient.searchMovies(searchQuery, 1);
+          setMovies(response.results);
           setPage(1);
           setHasMore(response.total_pages > 1);
         } catch (error) {
-          console.error('Error searching TV shows:', error);
+          console.error('Error searching movies:', error);
         } finally {
           setIsSearching(false);
         }
       } else {
-        // Reset to popular shows if search is cleared
+        // Reset to popular movies if search is cleared
         handleFilterChange();
       }
     }, 500);
@@ -138,20 +134,20 @@ export default function ShowsPage() {
 
       if (filters.yearRange) {
         if (typeof filters.yearRange === 'number') {
-          discoverParams.first_air_date_year = filters.yearRange;
+          discoverParams.primary_release_year = filters.yearRange;
         } else {
           const [startYear, endYear] = filters.yearRange.split('-').map(Number);
-          discoverParams.first_air_date_gte = `${startYear}-01-01`;
-          discoverParams.first_air_date_lte = `${endYear}-12-31`;
+          discoverParams.primary_release_date_gte = `${startYear}-01-01`;
+          discoverParams.primary_release_date_lte = `${endYear}-12-31`;
         }
       }
 
-      const response = await tmdbClient.discoverTVShows(discoverParams);
-      setShows(response.results);
+      const response = await tmdbClient.discoverMovies(discoverParams);
+      setMovies(response.results);
       setPage(1);
       setHasMore(response.total_pages > 1);
     } catch (error) {
-      console.error('Error filtering TV shows:', error);
+      console.error('Error filtering movies:', error);
     } finally {
       setIsLoading(false);
     }
@@ -161,14 +157,14 @@ export default function ShowsPage() {
     handleFilterChange();
   }, [filters]);
 
-  // Load more shows
+  // Load more movies
   const loadMore = async () => {
     const nextPage = page + 1;
     try {
       let response;
       
       if (searchQuery.trim()) {
-        response = await tmdbClient.searchTVShows(searchQuery, nextPage);
+        response = await tmdbClient.searchMovies(searchQuery, nextPage);
       } else {
         const discoverParams: any = {
           page: nextPage,
@@ -183,22 +179,22 @@ export default function ShowsPage() {
 
         if (filters.yearRange) {
           if (typeof filters.yearRange === 'number') {
-            discoverParams.first_air_date_year = filters.yearRange;
+            discoverParams.primary_release_year = filters.yearRange;
           } else {
             const [startYear, endYear] = filters.yearRange.split('-').map(Number);
-            discoverParams.first_air_date_gte = `${startYear}-01-01`;
-            discoverParams.first_air_date_lte = `${endYear}-12-31`;
+            discoverParams.primary_release_date_gte = `${startYear}-01-01`;
+            discoverParams.primary_release_date_lte = `${endYear}-12-31`;
           }
         }
 
-        response = await tmdbClient.discoverTVShows(discoverParams);
+        response = await tmdbClient.discoverMovies(discoverParams);
       }
 
-      setShows(prev => [...prev, ...response.results]);
+      setMovies(prev => [...prev, ...response.results]);
       setPage(nextPage);
       setHasMore(nextPage < response.total_pages);
     } catch (error) {
-      console.error('Error loading more TV shows:', error);
+      console.error('Error loading more movies:', error);
     }
   };
 
@@ -230,13 +226,13 @@ export default function ShowsPage() {
     return count;
   }, [filters]);
 
-  if (isLoading && shows.length === 0) {
+  if (isLoading && movies.length === 0) {
     return (
       <CinematicBackground variant="default" className="min-h-screen">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-400">Loading TV shows...</p>
+            <p className="text-gray-400">Loading cinema collection...</p>
           </div>
         </div>
       </CinematicBackground>
@@ -255,8 +251,8 @@ export default function ShowsPage() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-5xl font-bebas text-white mb-2">TV Shows</h1>
-              <p className="text-gray-400">Binge your next favorite series</p>
+              <h1 className="text-5xl font-bebas text-white mb-2">Movies</h1>
+              <p className="text-gray-400">Discover your next cinematic adventure</p>
             </div>
             
             <div className="flex items-center gap-3">
@@ -284,7 +280,7 @@ export default function ShowsPage() {
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <Input
-                placeholder="Search TV shows..."
+                placeholder="Search movies..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={cn(
@@ -382,7 +378,7 @@ export default function ShowsPage() {
 
                 {/* Year Range */}
                 <div>
-                  <label className="block text-white text-sm font-semibold mb-3">First Air Date</label>
+                  <label className="block text-white text-sm font-semibold mb-3">Release Year</label>
                   <div className="flex flex-wrap gap-2">
                     {YEAR_RANGES.map((year) => (
                       <button
@@ -409,7 +405,7 @@ export default function ShowsPage() {
         </motion.div>
 
         {/* Trending Section */}
-        {!searchQuery && trendingShows.length > 0 && (
+        {!searchQuery && trendingMovies.length > 0 && (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -420,22 +416,22 @@ export default function ShowsPage() {
               <h2 className="text-2xl font-bebas text-white">Trending This Week</h2>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-              {trendingShows.map((show, index) => (
+              {trendingMovies.map((movie, index) => (
                 <motion.div
-                  key={show.id}
+                  key={movie.id}
                   className="flex-shrink-0 w-48"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + index * 0.1 }}
                 >
                   <MediaCard
-                    id={show.id}
-                    title={show.name}
-                    year={show.first_air_date ? new Date(show.first_air_date).getFullYear() : undefined}
-                    posterPath={show.poster_path}
-                    type="tv"
-                    rating={show.vote_average * 10}
-                    genres={show.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
+                    id={movie.id}
+                    title={movie.title}
+                    year={new Date(movie.release_date).getFullYear()}
+                    posterPath={movie.poster_path}
+                    type="movie"
+                    rating={movie.vote_average * 10}
+                    genres={movie.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
                   />
                 </motion.div>
               ))}
@@ -443,54 +439,20 @@ export default function ShowsPage() {
           </motion.section>
         )}
 
-        {/* Airing Today Section */}
-        {!searchQuery && airingToday.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <Play className="w-6 h-6 text-emerald-400" />
-              <h2 className="text-2xl font-bebas text-white">Airing Today</h2>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-              {airingToday.map((show, index) => (
-                <motion.div
-                  key={show.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                >
-                  <MediaCard
-                    id={show.id}
-                    title={show.name}
-                    year={show.first_air_date ? new Date(show.first_air_date).getFullYear() : undefined}
-                    posterPath={show.poster_path}
-                    type="tv"
-                    rating={show.vote_average * 10}
-                    genres={show.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
-                  />
-                </motion.div>
-              ))}
-            </div>
-          </motion.section>
-        )}
-
-        {/* Shows Grid */}
+        {/* Movies Grid */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bebas text-white">
-              {searchQuery ? `Search Results for "${searchQuery}"` : 'Discover TV Shows'}
+              {searchQuery ? `Search Results for "${searchQuery}"` : 'Discover Movies'}
             </h2>
-            <p className="text-gray-400 text-sm">{shows.length} shows</p>
+            <p className="text-gray-400 text-sm">{movies.length} movies</p>
           </div>
 
-          {shows.length > 0 ? (
+          {movies.length > 0 ? (
             <>
               <div className={cn(
                 "grid gap-6 mb-8",
@@ -498,23 +460,23 @@ export default function ShowsPage() {
                   ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
                   : "grid-cols-1 md:grid-cols-2"
               )}>
-                {shows.map((show, index) => (
+                {movies.map((movie, index) => (
                   <motion.div
-                    key={show.id}
+                    key={movie.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                     className="stagger-item"
                   >
                     <MediaCard
-                      id={show.id}
-                      title={show.name}
-                      year={show.first_air_date ? new Date(show.first_air_date).getFullYear() : undefined}
-                      posterPath={show.poster_path}
-                      type="tv"
-                      rating={show.vote_average * 10}
-                      genres={show.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
-                      overview={show.overview}
+                      id={movie.id}
+                      title={movie.title}
+                      year={movie.release_date ? new Date(movie.release_date).getFullYear() : undefined}
+                      posterPath={movie.poster_path}
+                      type="movie"
+                      rating={movie.vote_average * 10}
+                      genres={movie.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
+                      overview={movie.overview}
                     />
                   </motion.div>
                 ))}
@@ -528,8 +490,8 @@ export default function ShowsPage() {
                     onClick={loadMore}
                     className="px-12"
                   >
-                    <Tv className="w-5 h-5 mr-2" />
-                    Load More Shows
+                    <TrendingUp className="w-5 h-5 mr-2" />
+                    Load More Movies
                   </GlowingButton>
                 </div>
               )}
@@ -537,9 +499,9 @@ export default function ShowsPage() {
           ) : (
             <div className="text-center py-16">
               <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-full flex items-center justify-center">
-                <Tv className="w-12 h-12 text-purple-400" />
+                <Eye className="w-12 h-12 text-purple-400" />
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">No TV shows found</h3>
+              <h3 className="text-xl font-semibold text-white mb-2">No movies found</h3>
               <p className="text-gray-400 mb-6">Try adjusting your search or filters</p>
               <GlowingButton variant="ghost" onClick={clearFilters}>
                 Clear All Filters
