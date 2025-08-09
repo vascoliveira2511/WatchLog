@@ -23,6 +23,7 @@ import { MediaCard } from "@/components/media/media-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const SORT_OPTIONS = [
   { value: "popularity.desc", label: "Most Popular" },
@@ -50,6 +51,7 @@ interface FilterState {
 }
 
 export default function MoviesPage() {
+  const router = useRouter();
   const [movies, setMovies] = useState<TMDBMovie[]>([]);
   const [genres, setGenres] = useState<TMDBGenre[]>([]);
   const [trendingMovies, setTrendingMovies] = useState<TMDBMovie[]>([]);
@@ -432,6 +434,7 @@ export default function MoviesPage() {
                     type="movie"
                     rating={movie.vote_average * 10}
                     genres={movie.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
+                    onClick={(id) => router.push(`/movies/${id}`)}
                   />
                 </motion.div>
               ))}
@@ -477,6 +480,7 @@ export default function MoviesPage() {
                       rating={movie.vote_average * 10}
                       genres={movie.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
                       overview={movie.overview}
+                      onClick={(id) => router.push(`/movies/${id}`)}
                     />
                   </motion.div>
                 ))}

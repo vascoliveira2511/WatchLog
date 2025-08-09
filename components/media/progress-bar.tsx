@@ -46,15 +46,15 @@ export function ProgressBar({
   const getStatusColor = (status?: string) => {
     switch (status) {
       case "completed":
-        return "bg-green-500";
+        return "bg-emerald-500";
       case "watching":
-        return "bg-blue-500";
+        return "bg-purple-500";
       case "dropped":
         return "bg-red-500";
       case "planned":
-        return "bg-gray-500";
+        return "bg-amber-500";
       default:
-        return "bg-primary";
+        return "bg-purple-500";
     }
   };
 
@@ -83,7 +83,7 @@ export function ProgressBar({
     <div className={cn("space-y-2", className)}>
       <div className="flex items-center justify-between">
         <h4 className={cn(
-          "font-medium",
+          "font-medium text-white",
           size === "sm" && "text-sm",
           size === "md" && "text-base",
           size === "lg" && "text-lg"
@@ -100,7 +100,7 @@ export function ProgressBar({
           
           {showPercentage && (
             <span className={cn(
-              "text-gray-600 font-medium",
+              "text-gray-300 font-medium",
               size === "sm" && "text-xs",
               size === "md" && "text-sm",
               size === "lg" && "text-base"
@@ -124,7 +124,7 @@ export function ProgressBar({
         {showNumbers && (
           <div className="flex justify-between items-center">
             <span className={cn(
-              "text-gray-500",
+              "text-gray-400",
               size === "sm" && "text-xs",
               size === "md" && "text-sm",
               size === "lg" && "text-base"
@@ -134,7 +134,7 @@ export function ProgressBar({
             
             {!isComplete && total > current && (
               <span className={cn(
-                "text-gray-400",
+                "text-gray-500",
                 size === "sm" && "text-xs",
                 size === "md" && "text-sm",
                 size === "lg" && "text-base"
@@ -148,8 +148,8 @@ export function ProgressBar({
       
       {isComplete && (
         <div className="flex items-center space-x-2">
-          <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-green-600 text-sm font-medium">
+          <div className="h-2 w-2 bg-emerald-400 rounded-full animate-pulse" />
+          <span className="text-emerald-400 text-sm font-medium">
             Completed!
           </span>
         </div>

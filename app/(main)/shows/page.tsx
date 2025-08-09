@@ -25,6 +25,7 @@ import { MediaCard } from "@/components/media/media-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const SORT_OPTIONS = [
   { value: "popularity.desc", label: "Most Popular" },
@@ -51,6 +52,7 @@ interface FilterState {
 }
 
 export default function ShowsPage() {
+  const router = useRouter();
   const [shows, setShows] = useState<TMDBTVShow[]>([]);
   const [genres, setGenres] = useState<TMDBGenre[]>([]);
   const [trendingShows, setTrendingShows] = useState<TMDBTVShow[]>([]);
@@ -436,6 +438,7 @@ export default function ShowsPage() {
                     type="tv"
                     rating={show.vote_average * 10}
                     genres={show.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
+                    onClick={(id) => router.push(`/shows/${id}`)}
                   />
                 </motion.div>
               ))}
@@ -470,6 +473,7 @@ export default function ShowsPage() {
                     type="tv"
                     rating={show.vote_average * 10}
                     genres={show.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
+                    onClick={(id) => router.push(`/shows/${id}`)}
                   />
                 </motion.div>
               ))}
@@ -515,6 +519,7 @@ export default function ShowsPage() {
                       rating={show.vote_average * 10}
                       genres={show.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
                       overview={show.overview}
+                      onClick={(id) => router.push(`/shows/${id}`)}
                     />
                   </motion.div>
                 ))}
