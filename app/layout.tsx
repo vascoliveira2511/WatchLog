@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   authors: [{ name: "WatchLog Team" }],
   creator: "WatchLog",
   publisher: "WatchLog",
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon-16x16.png',
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
     title: "WatchLog - Track Your Movies & TV Shows",
     description: "A free, open-source app for tracking your movie and TV show watching history",

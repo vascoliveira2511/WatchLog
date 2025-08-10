@@ -1,24 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  BarChart3,
   Clock,
   Calendar,
   TrendingUp,
   Award,
-  Target,
   Flame,
-  Users,
   Star,
   Film,
   Tv,
-  Timer,
   Activity,
-  Eye,
-  Heart,
-  PlayCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CinematicBackground } from "@/components/ui/cinematic-background";
-import { GlowingButton } from "@/components/ui/glowing-button";
 import { trackingService } from "@/lib/database/tracking";
 import { cn } from "@/lib/utils";
 
@@ -236,7 +228,9 @@ export default function StatsPage() {
 
             <Select
               value={selectedPeriod}
-              onValueChange={(value: any) => setSelectedPeriod(value)}
+              onValueChange={(value: "week" | "month" | "year" | "all") =>
+                setSelectedPeriod(value)
+              }
             >
               <SelectTrigger className="w-36 bg-black/40 border-white/20 text-white">
                 <SelectValue />

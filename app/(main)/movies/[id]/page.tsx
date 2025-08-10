@@ -4,20 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { 
-  Star, 
-  Calendar, 
-  Clock, 
-  Users, 
-  Play, 
-  Plus, 
-  Check, 
-  Heart,
-  Share,
-  BookOpen,
-  Film,
-  Eye
-} from "lucide-react";
+import { Star, Calendar, Clock, Heart, Share, Film, Eye } from "lucide-react";
 import { tmdbClient, TMDBMovie } from "@/lib/tmdb/client";
 import { trackingService } from "@/lib/database/tracking";
 import { CinematicBackground } from "@/components/ui/cinematic-background";
@@ -27,12 +14,11 @@ import { WatchButton, WatchStatus } from "@/components/ui/watch-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 
 export default function MovieDetailsPage() {
   const params = useParams();
   const movieId = parseInt(params.id as string);
-  
+
   const [movie, setMovie] = useState<TMDBMovie | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userRating, setUserRating] = useState(0);
@@ -44,7 +30,7 @@ export default function MovieDetailsPage() {
       try {
         const movieData = await tmdbClient.getMovie(movieId);
         setMovie(movieData);
-        
+
         // Load user tracking data
         try {
           const userData = await trackingService.getMovieUserData(movieId);
@@ -52,11 +38,11 @@ export default function MovieDetailsPage() {
           if (userData.rating) {
             setUserRating(userData.rating);
           }
-        } catch (error) {
-          console.log('User not authenticated or tracking data unavailable');
+        } catch {
+          console.log("User not authenticated or tracking data unavailable");
         }
       } catch (error) {
-        console.error('Error loading movie:', error);
+        console.error("Error loading movie:", error);
       } finally {
         setIsLoading(false);
       }
@@ -72,13 +58,13 @@ export default function MovieDetailsPage() {
     setUserRating(rating);
     try {
       await trackingService.rateMovie(movieId, rating);
-      console.log('Rating saved successfully');
+      console.log("Rating saved successfully");
     } catch (error) {
-      console.error('Error saving rating:', error);
+      console.error("Error saving rating:", error);
       // Revert on error
       setUserRating(previousRating);
       // Show error message to user
-      alert('Failed to save rating. Please try again.');
+      alert("Failed to save rating. Please try again.");
     }
   };
 
@@ -87,19 +73,19 @@ export default function MovieDetailsPage() {
     setWatchStatus(status);
     try {
       await trackingService.updateMovieStatus(movieId, status, movie);
-      console.log('Watch status updated successfully');
-      
+      console.log("Watch status updated successfully");
+
       // If marking as watched, show success message
-      if (status === 'watched') {
+      if (status === "watched") {
         // Could add a toast notification here
         console.log(`Marked "${movie?.title}" as watched!`);
       }
     } catch (error) {
-      console.error('Error updating watch status:', error);
+      console.error("Error updating watch status:", error);
       // Revert on error
       setWatchStatus(previousStatus);
       // Show error message to user
-      alert('Failed to update watch status. Please try again.');
+      alert("Failed to update watch status. Please try again.");
     }
   };
 
@@ -128,8 +114,12 @@ export default function MovieDetailsPage() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <Film className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white mb-2">Movie Not Found</h1>
-            <p className="text-gray-400">The requested movie could not be found.</p>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Movie Not Found
+            </h1>
+            <p className="text-gray-400">
+              The requested movie could not be found.
+            </p>
           </div>
         </div>
       </CinematicBackground>
@@ -150,7 +140,7 @@ export default function MovieDetailsPage() {
           {movie.backdrop_path && (
             <div className="absolute inset-0">
               <Image
-                src={tmdbClient.getBackdropUrl(movie.backdrop_path, 'w1280')}
+                src={tmdbClient.getBackdropUrl(movie.backdrop_path, "w1280")}
                 alt={movie.title}
                 fill
                 className="object-cover opacity-30"
@@ -160,7 +150,7 @@ export default function MovieDetailsPage() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             </div>
           )}
-          
+
           {/* Content */}
           <div className="relative h-full flex items-end p-8">
             <div className="flex items-end gap-8 max-w-7xl mx-auto w-full">
@@ -174,7 +164,7 @@ export default function MovieDetailsPage() {
                 <div className="relative w-64 h-96 glass-premium border border-white/20 overflow-hidden group">
                   {movie.poster_path ? (
                     <Image
-                      src={tmdbClient.getImageUrl(movie.poster_path, 'w500')}
+                      src={tmdbClient.getImageUrl(movie.poster_path, "w500")}
                       alt={movie.title}
                       fill
                       className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -186,7 +176,7 @@ export default function MovieDetailsPage() {
                   )}
                 </div>
               </motion.div>
-              
+
               {/* Movie Info */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -220,24 +210,24 @@ export default function MovieDetailsPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Genres */}
                 <div className="flex flex-wrap gap-2">
                   {movie.genres?.map((genre) => (
-                    <Badge 
-                      key={genre.id} 
+                    <Badge
+                      key={genre.id}
                       className="bg-white/10 text-white border-white/20 hover:bg-white/20"
                     >
                       {genre.name}
                     </Badge>
                   ))}
                 </div>
-                
+
                 {/* Overview */}
                 <p className="text-gray-300 leading-relaxed text-lg max-w-3xl">
                   {movie.overview}
                 </p>
-                
+
                 {/* Action Buttons */}
                 <div className="flex items-center gap-4">
                   <WatchButton
@@ -245,12 +235,12 @@ export default function MovieDetailsPage() {
                     onStatusChange={handleWatchStatusChange}
                     size="lg"
                   />
-                  
+
                   <GlowingButton variant="ghost" size="lg">
                     <Share className="w-5 h-5 mr-2" />
                     Share
                   </GlowingButton>
-                  
+
                   <GlowingButton variant="ghost" size="lg">
                     <Heart className="w-5 h-5 mr-2" />
                     Favorite
@@ -293,18 +283,34 @@ export default function MovieDetailsPage() {
           transition={{ delay: 0.8, duration: 0.6 }}
           className="max-w-7xl mx-auto px-8"
         >
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-6"
+          >
             <TabsList className="glass-premium border-white/10 bg-black/40">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              <TabsTrigger
+                value="overview"
+                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300"
+              >
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="cast" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              <TabsTrigger
+                value="cast"
+                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300"
+              >
                 Cast & Crew
               </TabsTrigger>
-              <TabsTrigger value="similar" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              <TabsTrigger
+                value="similar"
+                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300"
+              >
                 Similar Movies
               </TabsTrigger>
-              <TabsTrigger value="reviews" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              <TabsTrigger
+                value="reviews"
+                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300"
+              >
                 Reviews
               </TabsTrigger>
             </TabsList>
@@ -335,7 +341,8 @@ export default function MovieDetailsPage() {
                       <div>
                         <span className="text-gray-400">Rating</span>
                         <p className="text-white font-medium">
-                          {movie.vote_average.toFixed(1)}/10 ({movie.vote_count.toLocaleString()} votes)
+                          {movie.vote_average.toFixed(1)}/10 (
+                          {movie.vote_count.toLocaleString()} votes)
                         </p>
                       </div>
                       <div>
@@ -358,25 +365,25 @@ export default function MovieDetailsPage() {
                       <div>
                         <span className="text-gray-400">Watch Status</span>
                         <p className="text-white font-medium capitalize">
-                          {watchStatus.replace('_', ' ')}
+                          {watchStatus.replace("_", " ")}
                         </p>
                       </div>
                       <div>
                         <span className="text-gray-400">Your Rating</span>
                         <p className="text-white font-medium">
-                          {userRating > 0 ? `${userRating}/10` : 'Not rated'}
+                          {userRating > 0 ? `${userRating}/10` : "Not rated"}
                         </p>
                       </div>
                       <div>
                         <span className="text-gray-400">Times Watched</span>
                         <p className="text-white font-medium">
-                          {watchStatus === 'watched' ? '1' : '0'}
+                          {watchStatus === "watched" ? "1" : "0"}
                         </p>
                       </div>
                       <div>
                         <span className="text-gray-400">Added On</span>
                         <p className="text-white font-medium">
-                          {watchStatus !== 'unwatched' ? 'Today' : 'Not added'}
+                          {watchStatus !== "unwatched" ? "Today" : "Not added"}
                         </p>
                       </div>
                     </div>
@@ -392,7 +399,8 @@ export default function MovieDetailsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-400">
-                    Cast and crew information will be available soon with TMDb integration.
+                    Cast and crew information will be available soon with TMDb
+                    integration.
                   </p>
                 </CardContent>
               </Card>
@@ -405,7 +413,8 @@ export default function MovieDetailsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-400">
-                    Similar movies will be recommended based on this movie's genres and your preferences.
+                    Similar movies will be recommended based on this
+                    movie&apos;s genres and your preferences.
                   </p>
                 </CardContent>
               </Card>

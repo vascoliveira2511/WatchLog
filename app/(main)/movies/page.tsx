@@ -1,20 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
   Search,
   Filter,
   TrendingUp,
-  Calendar,
-  Star,
-  Clock,
   Eye,
   Grid3X3,
   List,
   X,
   ChevronDown,
-  Flame
+  Flame,
 } from "lucide-react";
 import { tmdbClient, TMDBMovie, TMDBGenre } from "@/lib/tmdb/client";
 import { CinematicBackground } from "@/components/ui/cinematic-background";
@@ -59,39 +56,89 @@ export default function MoviesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  
+
   const [filters, setFilters] = useState<FilterState>({
     genres: [],
     yearRange: null,
     rating: [0, 10],
-    sortBy: "popularity.desc"
+    sortBy: "popularity.desc",
   });
 
   // Load initial data
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [moviesResponse, genresResponse, trendingResponse] = await Promise.all([
-          tmdbClient.getPopularMovies(1),
-          tmdbClient.getMovieGenres(),
-          tmdbClient.getTrendingMovies('week')
-        ]);
+        const [moviesResponse, genresResponse, trendingResponse] =
+          await Promise.all([
+            tmdbClient.getPopularMovies(1),
+            tmdbClient.getMovieGenres(),
+            tmdbClient.getTrendingMovies("week"),
+          ]);
 
         setMovies(moviesResponse.results);
         setGenres(genresResponse.genres);
         setTrendingMovies(trendingResponse.results.slice(0, 6));
         setIsLoading(false);
       } catch (error) {
-        console.error('Error loading initial data:', error);
+        console.error("Error loading initial data:", error);
         setIsLoading(false);
       }
     };
 
     loadInitialData();
   }, []);
+
+  // Handle filter changes
+  const handleFilterChange = useCallback(async () => {
+    if (searchQuery.trim()) return; // Don't filter while searching
+
+    setIsLoading(true);
+    try {
+      interface DiscoverParams {
+        page: number;
+        sort_by: string;
+        vote_average_gte: number;
+        vote_average_lte: number;
+        with_genres?: string;
+        primary_release_year?: number;
+        primary_release_date_gte?: string;
+        primary_release_date_lte?: string;
+      }
+
+      const discoverParams: DiscoverParams = {
+        page: 1,
+        sort_by: filters.sortBy,
+        vote_average_gte: filters.rating[0],
+        vote_average_lte: filters.rating[1],
+      };
+
+      if (filters.genres.length > 0) {
+        discoverParams.with_genres = filters.genres.join(",");
+      }
+
+      if (filters.yearRange) {
+        if (typeof filters.yearRange === "number") {
+          discoverParams.primary_release_year = filters.yearRange;
+        } else {
+          const [startYear, endYear] = filters.yearRange.split("-").map(Number);
+          discoverParams.primary_release_date_gte = `${startYear}-01-01`;
+          discoverParams.primary_release_date_lte = `${endYear}-12-31`;
+        }
+      }
+
+      const response = await tmdbClient.discoverMovies(discoverParams);
+      setMovies(response.results);
+      setPage(1);
+      setHasMore(response.total_pages > 1);
+    } catch (error) {
+      console.error("Error filtering movies:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [filters, searchQuery]);
 
   // Handle search with debouncing
   useEffect(() => {
@@ -104,7 +151,7 @@ export default function MoviesPage() {
           setPage(1);
           setHasMore(response.total_pages > 1);
         } catch (error) {
-          console.error('Error searching movies:', error);
+          console.error("Error searching movies:", error);
         } finally {
           setIsSearching(false);
         }
@@ -115,60 +162,33 @@ export default function MoviesPage() {
     }, 500);
 
     return () => clearTimeout(searchTimeout);
-  }, [searchQuery]);
-
-  // Handle filter changes
-  const handleFilterChange = async () => {
-    if (searchQuery.trim()) return; // Don't filter while searching
-    
-    setIsLoading(true);
-    try {
-      const discoverParams: any = {
-        page: 1,
-        sort_by: filters.sortBy,
-        vote_average_gte: filters.rating[0],
-        vote_average_lte: filters.rating[1],
-      };
-
-      if (filters.genres.length > 0) {
-        discoverParams.with_genres = filters.genres.join(',');
-      }
-
-      if (filters.yearRange) {
-        if (typeof filters.yearRange === 'number') {
-          discoverParams.primary_release_year = filters.yearRange;
-        } else {
-          const [startYear, endYear] = filters.yearRange.split('-').map(Number);
-          discoverParams.primary_release_date_gte = `${startYear}-01-01`;
-          discoverParams.primary_release_date_lte = `${endYear}-12-31`;
-        }
-      }
-
-      const response = await tmdbClient.discoverMovies(discoverParams);
-      setMovies(response.results);
-      setPage(1);
-      setHasMore(response.total_pages > 1);
-    } catch (error) {
-      console.error('Error filtering movies:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [searchQuery, handleFilterChange]);
 
   useEffect(() => {
     handleFilterChange();
-  }, [filters]);
+  }, [filters, handleFilterChange]);
 
   // Load more movies
   const loadMore = async () => {
     const nextPage = page + 1;
     try {
       let response;
-      
+
       if (searchQuery.trim()) {
         response = await tmdbClient.searchMovies(searchQuery, nextPage);
       } else {
-        const discoverParams: any = {
+        interface DiscoverParams {
+          page: number;
+          sort_by: string;
+          vote_average_gte: number;
+          vote_average_lte: number;
+          with_genres?: string;
+          primary_release_year?: number;
+          primary_release_date_gte?: string;
+          primary_release_date_lte?: string;
+        }
+
+        const discoverParams: DiscoverParams = {
           page: nextPage,
           sort_by: filters.sortBy,
           vote_average_gte: filters.rating[0],
@@ -176,14 +196,16 @@ export default function MoviesPage() {
         };
 
         if (filters.genres.length > 0) {
-          discoverParams.with_genres = filters.genres.join(',');
+          discoverParams.with_genres = filters.genres.join(",");
         }
 
         if (filters.yearRange) {
-          if (typeof filters.yearRange === 'number') {
+          if (typeof filters.yearRange === "number") {
             discoverParams.primary_release_year = filters.yearRange;
           } else {
-            const [startYear, endYear] = filters.yearRange.split('-').map(Number);
+            const [startYear, endYear] = filters.yearRange
+              .split("-")
+              .map(Number);
             discoverParams.primary_release_date_gte = `${startYear}-01-01`;
             discoverParams.primary_release_date_lte = `${endYear}-12-31`;
           }
@@ -192,20 +214,20 @@ export default function MoviesPage() {
         response = await tmdbClient.discoverMovies(discoverParams);
       }
 
-      setMovies(prev => [...prev, ...response.results]);
+      setMovies((prev) => [...prev, ...response.results]);
       setPage(nextPage);
       setHasMore(nextPage < response.total_pages);
     } catch (error) {
-      console.error('Error loading more movies:', error);
+      console.error("Error loading more movies:", error);
     }
   };
 
   const toggleGenre = (genreId: number) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       genres: prev.genres.includes(genreId)
-        ? prev.genres.filter(id => id !== genreId)
-        : [...prev.genres, genreId]
+        ? prev.genres.filter((id) => id !== genreId)
+        : [...prev.genres, genreId],
     }));
   };
 
@@ -214,7 +236,7 @@ export default function MoviesPage() {
       genres: [],
       yearRange: null,
       rating: [0, 10],
-      sortBy: "popularity.desc"
+      sortBy: "popularity.desc",
     });
     setSearchQuery("");
   };
@@ -254,22 +276,24 @@ export default function MoviesPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-5xl font-bebas text-white mb-2">Movies</h1>
-              <p className="text-gray-400">Discover your next cinematic adventure</p>
+              <p className="text-gray-400">
+                Discover your next cinematic adventure
+              </p>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <GlowingButton
-                variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+                variant={viewMode === "grid" ? "primary" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode('grid')}
+                onClick={() => setViewMode("grid")}
                 className="p-2"
               >
                 <Grid3X3 className="w-4 h-4" />
               </GlowingButton>
               <GlowingButton
-                variant={viewMode === 'list' ? 'primary' : 'ghost'}
+                variant={viewMode === "list" ? "primary" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode('list')}
+                onClick={() => setViewMode("list")}
                 className="p-2"
               >
                 <List className="w-4 h-4" />
@@ -297,7 +321,7 @@ export default function MoviesPage() {
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center gap-3">
               <GlowingButton
                 variant="ghost"
@@ -307,16 +331,21 @@ export default function MoviesPage() {
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
                 {activeFiltersCount > 0 && (
-                  <Badge variant="secondary" className="ml-2 bg-purple-500 text-white text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 bg-purple-500 text-white text-xs"
+                  >
                     {activeFiltersCount}
                   </Badge>
                 )}
-                <ChevronDown className={cn(
-                  "w-4 h-4 ml-1 transition-transform",
-                  showFilters && "rotate-180"
-                )} />
+                <ChevronDown
+                  className={cn(
+                    "w-4 h-4 ml-1 transition-transform",
+                    showFilters && "rotate-180"
+                  )}
+                />
               </GlowingButton>
-              
+
               {activeFiltersCount > 0 && (
                 <GlowingButton variant="ghost" size="sm" onClick={clearFilters}>
                   <X className="w-4 h-4 mr-1" />
@@ -338,12 +367,19 @@ export default function MoviesPage() {
               >
                 {/* Sort By */}
                 <div>
-                  <label className="block text-white text-sm font-semibold mb-3">Sort By</label>
+                  <label className="block text-white text-sm font-semibold mb-3">
+                    Sort By
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {SORT_OPTIONS.map((option) => (
                       <button
                         key={option.value}
-                        onClick={() => setFilters(prev => ({ ...prev, sortBy: option.value }))}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            sortBy: option.value,
+                          }))
+                        }
                         className={cn(
                           "px-4 py-2 text-sm font-medium transition-all duration-300 border",
                           filters.sortBy === option.value
@@ -359,7 +395,9 @@ export default function MoviesPage() {
 
                 {/* Genres */}
                 <div>
-                  <label className="block text-white text-sm font-semibold mb-3">Genres</label>
+                  <label className="block text-white text-sm font-semibold mb-3">
+                    Genres
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {genres.map((genre) => (
                       <button
@@ -380,15 +418,20 @@ export default function MoviesPage() {
 
                 {/* Year Range */}
                 <div>
-                  <label className="block text-white text-sm font-semibold mb-3">Release Year</label>
+                  <label className="block text-white text-sm font-semibold mb-3">
+                    Release Year
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     {YEAR_RANGES.map((year) => (
                       <button
                         key={year.label}
-                        onClick={() => setFilters(prev => ({ 
-                          ...prev, 
-                          yearRange: prev.yearRange === year.value ? null : year.value 
-                        }))}
+                        onClick={() =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            yearRange:
+                              prev.yearRange === year.value ? null : year.value,
+                          }))
+                        }
                         className={cn(
                           "px-3 py-1.5 text-sm font-medium transition-all duration-300 border",
                           filters.yearRange === year.value
@@ -415,7 +458,9 @@ export default function MoviesPage() {
           >
             <div className="flex items-center gap-3 mb-6">
               <Flame className="w-6 h-6 text-amber-400" />
-              <h2 className="text-2xl font-bebas text-white">Trending This Week</h2>
+              <h2 className="text-2xl font-bebas text-white">
+                Trending This Week
+              </h2>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
               {trendingMovies.map((movie, index) => (
@@ -433,7 +478,11 @@ export default function MoviesPage() {
                     posterPath={movie.poster_path}
                     type="movie"
                     rating={movie.vote_average * 10}
-                    genres={movie.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
+                    genres={
+                      movie.genre_ids
+                        ?.map((id) => genres.find((g) => g.id === id)?.name)
+                        .filter(Boolean) as string[]
+                    }
                     onClick={(id) => router.push(`/movies/${id}`)}
                   />
                 </motion.div>
@@ -450,19 +499,23 @@ export default function MoviesPage() {
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bebas text-white">
-              {searchQuery ? `Search Results for "${searchQuery}"` : 'Discover Movies'}
+              {searchQuery
+                ? `Search Results for "${searchQuery}"`
+                : "Discover Movies"}
             </h2>
             <p className="text-gray-400 text-sm">{movies.length} movies</p>
           </div>
 
           {movies.length > 0 ? (
             <>
-              <div className={cn(
-                "grid gap-6 mb-8",
-                viewMode === 'grid' 
-                  ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
-                  : "grid-cols-1 md:grid-cols-2"
-              )}>
+              <div
+                className={cn(
+                  "grid gap-6 mb-8",
+                  viewMode === "grid"
+                    ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+                    : "grid-cols-1 md:grid-cols-2"
+                )}
+              >
                 {movies.map((movie, index) => (
                   <motion.div
                     key={movie.id}
@@ -474,11 +527,19 @@ export default function MoviesPage() {
                     <MediaCard
                       id={movie.id}
                       title={movie.title}
-                      year={movie.release_date ? new Date(movie.release_date).getFullYear() : undefined}
+                      year={
+                        movie.release_date
+                          ? new Date(movie.release_date).getFullYear()
+                          : undefined
+                      }
                       posterPath={movie.poster_path}
                       type="movie"
                       rating={movie.vote_average * 10}
-                      genres={movie.genre_ids?.map(id => genres.find(g => g.id === id)?.name).filter(Boolean) as string[]}
+                      genres={
+                        movie.genre_ids
+                          ?.map((id) => genres.find((g) => g.id === id)?.name)
+                          .filter(Boolean) as string[]
+                      }
                       overview={movie.overview}
                       onClick={(id) => router.push(`/movies/${id}`)}
                     />
@@ -505,8 +566,12 @@ export default function MoviesPage() {
               <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-full flex items-center justify-center">
                 <Eye className="w-12 h-12 text-purple-400" />
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">No movies found</h3>
-              <p className="text-gray-400 mb-6">Try adjusting your search or filters</p>
+              <h3 className="text-xl font-semibold text-white mb-2">
+                No movies found
+              </h3>
+              <p className="text-gray-400 mb-6">
+                Try adjusting your search or filters
+              </p>
               <GlowingButton variant="ghost" onClick={clearFilters}>
                 Clear All Filters
               </GlowingButton>

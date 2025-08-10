@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from '@/lib/supabase/client';
-import { Search, Bell, User, Settings, LogOut, Menu, X, ChevronDown } from "lucide-react";
+import { Search, Bell, User, Settings, LogOut, Menu, X, ChevronDown, Film } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -57,8 +57,14 @@ export function Header() {
         {/* Logo */}
         <div className="flex items-center gap-8">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg" />
-            <span className="text-xl font-bold">WatchLog</span>
+            <div className="relative">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center">
+                <Film className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+              WatchLog
+            </span>
           </Link>
 
           {/* Main Nav - Desktop Only */}

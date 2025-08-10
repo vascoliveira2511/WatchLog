@@ -2,30 +2,27 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { createClient } from '@/lib/supabase/client';
-import { trackingService } from '@/lib/database/tracking';
-import { clearAllUserDataClient } from '@/lib/database/client-operations';
-import { useRouter } from 'next/navigation';
-import { 
-  User, 
-  Settings, 
-  Heart, 
-  Clock, 
-  Calendar, 
-  Film, 
-  Tv, 
+import { createClient } from "@/lib/supabase/client";
+import { trackingService } from "@/lib/database/tracking";
+import { clearAllUserDataClient } from "@/lib/database/client-operations";
+import { useRouter } from "next/navigation";
+import {
+  User,
+  Settings,
+  Heart,
+  Clock,
+  Calendar,
+  Film,
+  Tv,
   Star,
   Activity,
-  Users,
   Trophy,
-  Edit2,
   MapPin,
-  Mail,
   Globe,
   Play,
   Eye,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +31,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GlowingButton } from "@/components/ui/glowing-button";
 import { CinematicBackground } from "@/components/ui/cinematic-background";
 import { MediaCard } from "@/components/media/media-card";
-import { cn } from "@/lib/utils";
 
 // Mock user data - will be replaced with real Supabase data
 const mockUser = {
@@ -47,7 +43,7 @@ const mockUser = {
   location: "Los Angeles, CA",
   website: "https://myblog.com",
   joinedAt: "2024-01-15",
-  isPrivate: false
+  isPrivate: false,
 };
 
 const mockStats = {
@@ -60,22 +56,84 @@ const mockStats = {
   totalHours: 1489,
   averageRating: 8.4,
   favoriteGenres: ["Drama", "Sci-Fi", "Thriller"],
-  currentStreak: 12
+  currentStreak: 12,
 };
 
 const mockRecentActivity = [
-  { id: 1, type: "watched", title: "The Batman", mediaType: "movie", rating: 9.2, timestamp: "2024-01-10T20:30:00Z" },
-  { id: 2, type: "rated", title: "House of the Dragon", mediaType: "tv", rating: 8.5, timestamp: "2024-01-09T19:15:00Z" },
-  { id: 3, type: "watchlist", title: "Oppenheimer", mediaType: "movie", timestamp: "2024-01-08T14:22:00Z" },
-  { id: 4, type: "completed", title: "The Bear", mediaType: "tv", rating: 9.8, timestamp: "2024-01-07T21:45:00Z" },
-  { id: 5, type: "watched", title: "Dune: Part Two", mediaType: "movie", rating: 9.5, timestamp: "2024-01-06T18:00:00Z" },
+  {
+    id: 1,
+    type: "watched",
+    title: "The Batman",
+    mediaType: "movie",
+    rating: 9.2,
+    timestamp: "2024-01-10T20:30:00Z",
+  },
+  {
+    id: 2,
+    type: "rated",
+    title: "House of the Dragon",
+    mediaType: "tv",
+    rating: 8.5,
+    timestamp: "2024-01-09T19:15:00Z",
+  },
+  {
+    id: 3,
+    type: "watchlist",
+    title: "Oppenheimer",
+    mediaType: "movie",
+    timestamp: "2024-01-08T14:22:00Z",
+  },
+  {
+    id: 4,
+    type: "completed",
+    title: "The Bear",
+    mediaType: "tv",
+    rating: 9.8,
+    timestamp: "2024-01-07T21:45:00Z",
+  },
+  {
+    id: 5,
+    type: "watched",
+    title: "Dune: Part Two",
+    mediaType: "movie",
+    rating: 9.5,
+    timestamp: "2024-01-06T18:00:00Z",
+  },
 ];
 
 const mockWatchlist = [
-  { id: 1, title: "Oppenheimer", type: "movie", posterPath: null, year: 2023, rating: 8.3 },
-  { id: 2, title: "The Last of Us", type: "tv", posterPath: null, year: 2023, rating: 8.7 },
-  { id: 3, title: "Everything Everywhere All at Once", type: "movie", posterPath: null, year: 2022, rating: 7.8 },
-  { id: 4, title: "Wednesday", type: "tv", posterPath: null, year: 2022, rating: 8.1 },
+  {
+    id: 1,
+    title: "Oppenheimer",
+    type: "movie",
+    posterPath: null,
+    year: 2023,
+    rating: 8.3,
+  },
+  {
+    id: 2,
+    title: "The Last of Us",
+    type: "tv",
+    posterPath: null,
+    year: 2023,
+    rating: 8.7,
+  },
+  {
+    id: 3,
+    title: "Everything Everywhere All at Once",
+    type: "movie",
+    posterPath: null,
+    year: 2022,
+    rating: 7.8,
+  },
+  {
+    id: 4,
+    title: "Wednesday",
+    type: "tv",
+    posterPath: null,
+    year: 2022,
+    rating: 8.1,
+  },
 ];
 
 export default function ProfilePage() {
@@ -94,9 +152,12 @@ export default function ProfilePage() {
     const loadUserData = async () => {
       try {
         // Load authenticated user
-        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+        const {
+          data: { user: authUser },
+          error,
+        } = await supabase.auth.getUser();
         if (error || !authUser) {
-          console.log('No authenticated user');
+          console.log("No authenticated user");
           setIsLoading(false);
           return;
         }
@@ -106,8 +167,14 @@ export default function ProfilePage() {
           ...mockUser,
           id: authUser.id,
           email: authUser.email || mockUser.email,
-          name: authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || mockUser.name,
-          username: authUser.user_metadata?.username || authUser.email?.split('@')[0] || mockUser.username,
+          name:
+            authUser.user_metadata?.display_name ||
+            authUser.email?.split("@")[0] ||
+            mockUser.name,
+          username:
+            authUser.user_metadata?.username ||
+            authUser.email?.split("@")[0] ||
+            mockUser.username,
         });
 
         // Load user stats
@@ -123,35 +190,45 @@ export default function ProfilePage() {
         // Load user watchlist
         const userWatchlist = await trackingService.getUserWatchlist();
         if (userWatchlist.length > 0) {
-          setWatchlist(userWatchlist.slice(0, 4).map(item => ({
-            id: item.media_id,
-            title: `Media ${item.media_id}`, // Will be populated from TMDB
-            type: item.media_type === 'movie' ? 'movie' : 'tv',
-            posterPath: null, // Will be populated from TMDB
-            year: 2023, // Will be populated from TMDB
-            rating: 8.0, // Mock rating
-          })));
+          setWatchlist(
+            userWatchlist.slice(0, 4).map((item) => ({
+              id: item.media_id,
+              title: `Media ${item.media_id}`, // Will be populated from TMDB
+              type: item.media_type === "movie" ? "movie" : "tv",
+              posterPath: null, // Will be populated from TMDB
+              year: 2023, // Will be populated from TMDB
+              rating: 8.0, // Mock rating
+            }))
+          );
         }
 
-        console.log('Loaded profile data:', { authUser, userStats, userWatchlist });
+        console.log("Loaded profile data:", {
+          authUser,
+          userStats,
+          userWatchlist,
+        });
         setIsLoading(false);
       } catch (error) {
-        console.error('Error loading profile data:', error);
+        console.error("Error loading profile data:", error);
         setIsLoading(false);
       }
     };
 
     loadUserData();
-  }, []);
+  }, [supabase.auth]);
 
   const handleClearAllData = async () => {
-    if (!confirm('⚠️ Are you sure you want to clear ALL your watch history, watchlist, and progress data? This action cannot be undone!')) {
+    if (
+      !confirm(
+        "⚠️ Are you sure you want to clear ALL your watch history, watchlist, and progress data? This action cannot be undone!"
+      )
+    ) {
       return;
     }
 
     setIsClearingData(true);
     const success = await clearAllUserDataClient();
-    
+
     if (success) {
       // Refresh the page to show updated state
       router.refresh();
@@ -164,39 +241,53 @@ export default function ProfilePage() {
         watchlistCount: 0,
         moviesWatched: 0,
         showsWatched: 0,
-        totalHours: 0
+        totalHours: 0,
       });
     }
-    
+
     setIsClearingData(false);
   };
 
   const formatJoinDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
     });
   };
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'watched': return <Play className="h-4 w-4 text-emerald-400" />;
-      case 'rated': return <Star className="h-4 w-4 text-amber-400" />;
-      case 'watchlist': return <Heart className="h-4 w-4 text-purple-400" />;
-      case 'completed': return <Trophy className="h-4 w-4 text-blue-400" />;
-      default: return <Activity className="h-4 w-4 text-gray-400" />;
+      case "watched":
+        return <Play className="h-4 w-4 text-emerald-400" />;
+      case "rated":
+        return <Star className="h-4 w-4 text-amber-400" />;
+      case "watchlist":
+        return <Heart className="h-4 w-4 text-purple-400" />;
+      case "completed":
+        return <Trophy className="h-4 w-4 text-blue-400" />;
+      default:
+        return <Activity className="h-4 w-4 text-gray-400" />;
     }
   };
 
-  const getActivityText = (activity: any) => {
+  type Activity = {
+    id: number;
+    type: "watched" | "rated" | "watchlist" | "completed" | string;
+    title: string;
+    mediaType: string;
+    rating?: number;
+    timestamp: string;
+  };
+
+  const getActivityText = (activity: Activity) => {
     switch (activity.type) {
-      case 'watched':
+      case "watched":
         return `Watched ${activity.title}`;
-      case 'rated':
+      case "rated":
         return `Rated ${activity.title} ${activity.rating}/10`;
-      case 'watchlist':
+      case "watchlist":
         return `Added ${activity.title} to watchlist`;
-      case 'completed':
+      case "completed":
         return `Completed ${activity.title}`;
       default:
         return `Activity on ${activity.title}`;
@@ -238,20 +329,24 @@ export default function ProfilePage() {
               </Avatar>
             </div>
           </div>
-          
+
           {/* Profile Info */}
           <div className="pt-24 px-8 pb-8">
             <div className="flex items-start justify-between">
               <div className="space-y-4">
                 <div>
-                  <h1 className="text-4xl font-bebas text-white mb-1">{user.name}</h1>
+                  <h1 className="text-4xl font-bebas text-white mb-1">
+                    {user.name}
+                  </h1>
                   <p className="text-xl text-gray-400">@{user.username}</p>
                 </div>
-                
+
                 {user.bio && (
-                  <p className="text-gray-300 max-w-2xl leading-relaxed">{user.bio}</p>
+                  <p className="text-gray-300 max-w-2xl leading-relaxed">
+                    {user.bio}
+                  </p>
                 )}
-                
+
                 <div className="flex items-center gap-6 text-sm text-gray-400">
                   {user.location && (
                     <div className="flex items-center gap-1">
@@ -262,8 +357,13 @@ export default function ProfilePage() {
                   {user.website && (
                     <div className="flex items-center gap-1">
                       <Globe className="h-4 w-4" />
-                      <a href={user.website} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 transition-colors">
-                        {user.website.replace('https://', '')}
+                      <a
+                        href={user.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-purple-400 transition-colors"
+                      >
+                        {user.website.replace("https://", "")}
                       </a>
                     </div>
                   )}
@@ -273,7 +373,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <GlowingButton variant="ghost" size="sm">
                   <Settings className="h-4 w-4 mr-2" />
@@ -281,23 +381,31 @@ export default function ProfilePage() {
                 </GlowingButton>
               </div>
             </div>
-            
+
             {/* Stats Row */}
             <div className="flex items-center gap-8 mt-6">
               <div className="text-center">
-                <p className="text-3xl font-bold text-white">{stats.totalWatched}</p>
+                <p className="text-3xl font-bold text-white">
+                  {stats.totalWatched}
+                </p>
                 <p className="text-sm text-gray-400">Total Watched</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-white">{stats.watchlistCount}</p>
+                <p className="text-3xl font-bold text-white">
+                  {stats.watchlistCount}
+                </p>
                 <p className="text-sm text-gray-400">Watchlist</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-white">{stats.followers}</p>
+                <p className="text-3xl font-bold text-white">
+                  {stats.followers}
+                </p>
                 <p className="text-sm text-gray-400">Followers</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-white">{stats.following}</p>
+                <p className="text-3xl font-bold text-white">
+                  {stats.following}
+                </p>
                 <p className="text-sm text-gray-400">Following</p>
               </div>
             </div>
@@ -310,21 +418,40 @@ export default function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
         >
-          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-8">
+          <Tabs
+            value={selectedTab}
+            onValueChange={setSelectedTab}
+            className="space-y-8"
+          >
             <TabsList className="glass-premium border-white/10 bg-black/40 grid w-full grid-cols-5">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              <TabsTrigger
+                value="overview"
+                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300"
+              >
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="activity" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              <TabsTrigger
+                value="activity"
+                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300"
+              >
                 Activity
               </TabsTrigger>
-              <TabsTrigger value="watchlist" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              <TabsTrigger
+                value="watchlist"
+                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300"
+              >
                 Watchlist
               </TabsTrigger>
-              <TabsTrigger value="stats" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              <TabsTrigger
+                value="stats"
+                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300"
+              >
                 Statistics
               </TabsTrigger>
-              <TabsTrigger value="settings" className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300">
+              <TabsTrigger
+                value="settings"
+                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300"
+              >
                 Settings
               </TabsTrigger>
             </TabsList>
@@ -343,19 +470,27 @@ export default function ProfilePage() {
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-gray-400">Movies</span>
-                        <span className="text-white font-semibold">{stats.moviesWatched}</span>
+                        <span className="text-white font-semibold">
+                          {stats.moviesWatched}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">TV Shows</span>
-                        <span className="text-white font-semibold">{stats.showsWatched}</span>
+                        <span className="text-white font-semibold">
+                          {stats.showsWatched}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Total Hours</span>
-                        <span className="text-white font-semibold">{stats.totalHours}h</span>
+                        <span className="text-white font-semibold">
+                          {stats.totalHours}h
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Avg Rating</span>
-                        <span className="text-white font-semibold">{stats.averageRating}</span>
+                        <span className="text-white font-semibold">
+                          {stats.averageRating}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Current Streak</span>
@@ -378,7 +513,10 @@ export default function ProfilePage() {
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
                       {stats.favoriteGenres.map((genre) => (
-                        <Badge key={genre} className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                        <Badge
+                          key={genre}
+                          className="bg-purple-500/20 text-purple-300 border-purple-500/30"
+                        >
                           {genre}
                         </Badge>
                       ))}
@@ -397,12 +535,19 @@ export default function ProfilePage() {
                   <CardContent>
                     <div className="space-y-3">
                       {recentActivity.slice(0, 3).map((activity) => (
-                        <div key={activity.id} className="flex items-center gap-3">
+                        <div
+                          key={activity.id}
+                          className="flex items-center gap-3"
+                        >
                           {getActivityIcon(activity.type)}
                           <div className="flex-1">
-                            <p className="text-sm text-white">{getActivityText(activity)}</p>
+                            <p className="text-sm text-white">
+                              {getActivityText(activity)}
+                            </p>
                             <p className="text-xs text-gray-500">
-                              {new Date(activity.timestamp).toLocaleDateString()}
+                              {new Date(
+                                activity.timestamp
+                              ).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
@@ -430,20 +575,26 @@ export default function ProfilePage() {
                       >
                         {getActivityIcon(activity.type)}
                         <div className="flex-1">
-                          <p className="text-white font-medium">{getActivityText(activity)}</p>
+                          <p className="text-white font-medium">
+                            {getActivityText(activity)}
+                          </p>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge className="bg-gray-500/20 text-gray-300 border-gray-500/30 text-xs">
                               {activity.mediaType}
                             </Badge>
                             <span className="text-xs text-gray-500">
-                              {new Date(activity.timestamp).toLocaleDateString()}
+                              {new Date(
+                                activity.timestamp
+                              ).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                         {activity.rating && (
                           <div className="flex items-center gap-1">
                             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                            <span className="text-white font-semibold">{activity.rating}</span>
+                            <span className="text-white font-semibold">
+                              {activity.rating}
+                            </span>
                           </div>
                         )}
                       </motion.div>
@@ -498,7 +649,9 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-400 mb-1">Movies</p>
-                        <p className="text-3xl font-bold text-white">{stats.moviesWatched}</p>
+                        <p className="text-3xl font-bold text-white">
+                          {stats.moviesWatched}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -512,7 +665,9 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-400 mb-1">TV Shows</p>
-                        <p className="text-3xl font-bold text-white">{stats.showsWatched}</p>
+                        <p className="text-3xl font-bold text-white">
+                          {stats.showsWatched}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -525,8 +680,12 @@ export default function ProfilePage() {
                         <Clock className="h-8 w-8 text-emerald-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-400 mb-1">Total Hours</p>
-                        <p className="text-3xl font-bold text-white">{stats.totalHours}h</p>
+                        <p className="text-sm text-gray-400 mb-1">
+                          Total Hours
+                        </p>
+                        <p className="text-3xl font-bold text-white">
+                          {stats.totalHours}h
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -540,7 +699,9 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-400 mb-1">Avg Rating</p>
-                        <p className="text-3xl font-bold text-white">{stats.averageRating}</p>
+                        <p className="text-3xl font-bold text-white">
+                          {stats.averageRating}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -559,20 +720,25 @@ export default function ProfilePage() {
                 <CardContent className="space-y-6">
                   {/* Data Management Section */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Data Management</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      Data Management
+                    </h3>
                     <div className="p-4 border border-red-500/30 bg-red-500/10 rounded-lg">
                       <div className="flex items-start gap-4">
                         <AlertTriangle className="h-6 w-6 text-red-400 mt-0.5 flex-shrink-0" />
                         <div className="space-y-3 flex-1">
                           <div>
-                            <h4 className="font-semibold text-white mb-2">Clear All Data</h4>
+                            <h4 className="font-semibold text-white mb-2">
+                              Clear All Data
+                            </h4>
                             <p className="text-gray-300 text-sm">
-                              This will permanently delete all of your watch history, watchlist items, ratings, and progress data. 
-                              This action cannot be undone.
+                              This will permanently delete all of your watch
+                              history, watchlist items, ratings, and progress
+                              data. This action cannot be undone.
                             </p>
                           </div>
-                          <GlowingButton 
-                            variant="ghost" 
+                          <GlowingButton
+                            variant="ghost"
                             size="sm"
                             className="border-red-500/50 text-red-400 hover:bg-red-500/20"
                             onClick={handleClearAllData}
@@ -588,26 +754,38 @@ export default function ProfilePage() {
 
                   {/* Account Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Account Information</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      Account Information
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-sm text-gray-400">Email</label>
                         <p className="text-white">{user.email}</p>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm text-gray-400">Member Since</label>
-                        <p className="text-white">{formatJoinDate(user.joinedAt)}</p>
+                        <label className="text-sm text-gray-400">
+                          Member Since
+                        </label>
+                        <p className="text-white">
+                          {formatJoinDate(user.joinedAt)}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Privacy Settings */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Privacy</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      Privacy
+                    </h3>
                     <div className="flex items-center justify-between p-4 border border-white/10 rounded-lg">
                       <div>
-                        <h4 className="font-medium text-white">Private Profile</h4>
-                        <p className="text-sm text-gray-400">Make your profile and activity private</p>
+                        <h4 className="font-medium text-white">
+                          Private Profile
+                        </h4>
+                        <p className="text-sm text-gray-400">
+                          Make your profile and activity private
+                        </p>
                       </div>
                       <div className="text-gray-400">
                         {user.isPrivate ? "Enabled" : "Disabled"}
